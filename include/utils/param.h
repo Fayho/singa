@@ -165,7 +165,7 @@ class RandomSyncParam: public Param{
   Blob<float> snapshot_;
 };
 /**
- * Sync with server by elastic SGD.
+ * Sync with server by elastic SGD see http://arxiv.org/abs/1412.6651.
  */
 class ElasticParam: public Param{
  public:

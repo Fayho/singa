@@ -141,6 +141,10 @@ void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
 
 void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
   // check training
+  if(!training){
+    data.CopyFrom(srclayers[0]->data());
+    return;
+  }
   float pkeep=1-pdrop_;
   Tensor<cpu, 1> mask(mask_.mutable_cpu_data(), Shape1(mask_.count()));
   mask = F<op::threshold>(ASingleton<Random<cpu>>::Instance()\
