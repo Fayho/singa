@@ -1,6 +1,5 @@
 #include <glog/logging.h>
 #include <gflags/gflags.h>
-#include <mpi.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "utils/shard.h"

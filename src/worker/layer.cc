@@ -142,7 +142,7 @@ void DropoutLayer::SetupAfterPartition(const LayerProto& proto,
 void DropoutLayer::ComputeFeature(bool training, const vector<SLayer>& srclayers) {
   // check training
   if(!training){
-    data.CopyFrom(srclayers[0]->data());
+    data_.CopyFrom(srclayers[0]->data());
     return;
   }
   float pkeep=1-pdrop_;
