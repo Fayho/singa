@@ -70,6 +70,7 @@ ParamManager::ParamManager(shared_ptr<NeuralNet> net,
     for(int i=0;i<cluster->nservers();i++)
       CHECK(router_->Connect(cluster->server_addr(i)));
   }
+  LOG(ERROR)<<"Total number of parameters is ="<<count;
 }
 
 ParamManager::~ParamManager(){

@@ -499,10 +499,8 @@ void PoolingLayer::Setup(const LayerProto& proto,
   else
     channels_=1;
   batchsize_=srcshape[0];
-  pooled_height_ = static_cast<int>(ceil(static_cast<float>(
-          height_ - kernel_) / stride_)) + 1;
-  pooled_width_ = static_cast<int>(ceil(static_cast<float>(
-          width_ - kernel_) / stride_)) + 1;
+  pooled_height_ = static_cast<int>((height_ - kernel_) / stride_) + 1;
+  pooled_width_ = static_cast<int>(( width_ - kernel_) / stride_) + 1;
   data_.Reshape(vector<int>{batchsize_, channels_, pooled_height_, pooled_width_});
   grad_.ReshapeLike(data_);
 }
@@ -582,12 +580,12 @@ void RGBImageLayer::ParseRecords(bool training, const vector<Record>& records,
   const SingleLabelImageRecord& r=records.at(0).image();
   Tensor<cpu, 3> raw_image(Shape3(r.shape(0),r.shape(1),r.shape(2)));
   AllocSpace(raw_image);
-
   Tensor<cpu, 3> croped_image(Shape3(s[1],s[2],s[3]));
   if(cropsize_)
     AllocSpace(croped_image);
     //CHECK(std::equal(croped_image.shape(), raw_image.shape());
   int rid=0;
+  const float* meandptr=mean_.cpu_data();
   for(const Record& record: records){
     auto image=images[rid];
     bool do_crop=cropsize_>0&&training;
@@ -600,22 +598,26 @@ void RGBImageLayer::ParseRecords(bool training, const vector<Record>& records,
     if(record.image().pixel().size()){
       string pixel=record.image().pixel();
       for(size_t i=0;i<pixel.size();i++)
-        dptr[i]=static_cast<float>(pixel[i]);
+        dptr[i]=static_cast<float>(static_cast<uint8_t>(pixel[i]));
     }else {
       memcpy(dptr, record.image().data().data(),
           sizeof(float)*record.image().data_size());
     }
+    for(int i=0;i<mean_.count();i++)
+      dptr[i]-=meandptr[i];
 
-    if(cropsize_){
+    if(do_crop){
       int hoff=rand()%(r.shape(1)-cropsize_);
       int woff=rand()%(r.shape(2)-cropsize_);
       Shape<2> cropshape=Shape2(cropsize_, cropsize_);
+      if(do_mirror){
         croped_image=crop(raw_image, cropshape, hoff, woff);
-    }else
-      croped_image=raw_image;
-
-    if(mirror_&&rand()%2){
-      image=mirror(croped_image);
+        image=mirror(croped_image);
+      }else{
+        image=crop(raw_image, cropshape, hoff, woff);
+      }
+    }else if(do_mirror){
+      image=mirror(raw_image);
     }
     rid++;
   }
@@ -644,6 +646,15 @@ void RGBImageLayer::Setup(const LayerProto& proto,
     shape[3]=cropsize_;
   }
   data_.Reshape(shape);
+  mean_.Reshape({shape[1],shape[2],shape[3]});
+  if(proto.rgbimage_param().has_meanfile()){
+    BlobProto tmp;
+    ReadProtoFromBinaryFile(proto.rgbimage_param().meanfile().c_str(), &tmp);
+    CHECK_EQ(mean_.count(), tmp.data_size());
+    memcpy(mean_.mutable_cpu_data(), tmp.data().data(), sizeof(float)*tmp.data_size());
+  }else{
+    memset(mean_.mutable_cpu_data(),0,sizeof(float)*mean_.count());
+  }
 }
 
 /***************Implementation for ShardDataLayer**************************/

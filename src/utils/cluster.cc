@@ -15,7 +15,7 @@ Cluster::Cluster(const ClusterProto &cluster, string hostfile, int procsid) {
   gethostname(hostname, sizeof(hostname));
   hostname_=string(hostname);
 
-  if(cluster_.nworkers()>1&&cluster_.nservers()>0){
+  if(cluster_.nworkers()>0&&cluster_.nservers()>0){
     std::ifstream ifs(hostfile, std::ifstream::in);
     std::string line;
     while(std::getline(ifs, line)){

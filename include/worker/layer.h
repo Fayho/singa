@@ -243,6 +243,7 @@ class RGBImageLayer: public ParserLayer {
   float scale_;
   int cropsize_;
   bool mirror_;
+  Blob<float> mean_;
 };
 
 class ShardDataLayer: public DataLayer{

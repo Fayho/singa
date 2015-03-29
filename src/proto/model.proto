@@ -72,7 +72,7 @@ message ParamProto {
   enum InitMethod {
     kConstant = 0;
     // sample gaussian with std and mean
-    kGaussain = 1;
+    kGaussian = 1;
     // uniform sampling between low and high
     kUniform = 2;
     // copy the content and history which are from previous training
@@ -161,6 +161,7 @@ message RGBImage {
   optional float scale=1 [default=1.0];
   optional int32 cropsize=2 [default=0];
   optional bool mirror=3 [default=false];
+  optional string meanfile=4;
 }
 message SplitProto{
   optional int32 num_splits=1;
@@ -331,13 +332,16 @@ message UpdaterProto {
     kExponential = 3;
     kLinear = 4;
     kStep = 5;
+    kFixedStep=6;
   }
   optional ChangeProto learning_rate_change_method = 16 [default = kFixed];
   optional int32 sync_frequency=17 [default=1];
   // warmup the parameters and then send to parameter servers.
   optional int32 warmup_steps=25 [default=10];
   optional float moving_rate=26 [default=0];
-  optional string param_type=27[default="Elastic"];
+  optional string param_type=27[default="Param"];
+  repeated int32 step=28;
+  repeated float step_lr=29;
 }
 message BlobProto {
   optional int32 num = 1 [default = 0];

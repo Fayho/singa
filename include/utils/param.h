@@ -30,15 +30,15 @@ class Param {
   /**
    * handle sync msg by server
    */
-  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg)=0;
+  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
   /**
    * gen sync msg by worker
    */
-  virtual zmsg_t *GenSyncMsgFromWorker(float sample_ratio)=0;
+  virtual zmsg_t *GenSyncMsgFromWorker(float sample_ratio);
   /**
    * parse sync msg by worker
    */
-  virtual void ParseSyncMsgFromPS(zmsg_t** msg)=0;
+  virtual void ParseSyncMsgFromPS(zmsg_t** msg);
 
   /**
    * setup param shape

@@ -44,6 +44,12 @@ float Updater::GetLearningRate(int step){
       freq=proto_.learning_rate_change_frequency();
       ret = base * pow(proto_.gamma(), step / freq);
       break;
+    case UpdaterProto_ChangeProto_kFixedStep:
+      for(size_t i=0;i<proto_.step_size();i++){
+        if(step>proto_.step(i))
+          ret=proto_.step_lr(i);
+      }
+      break;
     default:
       LOG(ERROR) << "Wrong hyper-parameter update method";
   }
@@ -54,7 +60,7 @@ float Updater::GetLearningRate(int step){
 void SGDUpdater::Init(const UpdaterProto& proto){
   Updater::Init(proto);
   base_lr_=proto.base_learning_rate();
-  CHECK_GT(base_lr_, 0);
+  //CHECK_GT(base_lr_, 0);
   momentum_=proto.momentum();
   weight_decay_=proto.weight_decay();
 }
@@ -71,10 +77,11 @@ void SGDUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
   if(momentum_>0){
     Tensor<cpu, 1> history(param->mutable_cpu_history(), s);
     if(step==0) history=0;
-    history=history*momentum_+lr*grad;
-    data-=history;
+    history=history*momentum_-lr*grad;
+    data+=history;
   }else{
-    data-=lr*grad;
+    grad*=-lr;
+    data+=lr*grad;
   }
 }
 

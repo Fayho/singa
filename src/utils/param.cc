@@ -46,7 +46,50 @@ zmsg_t* Param::HandleGetMsg(zmsg_t** msg){
   delete name;
   return ret;
 }
-
+zmsg_t* Param::HandleSyncMsg(zmsg_t** msg){
+  int64_t start=zclock_mono();
+  char* control=zframe_strdup(zmsg_first(*msg));
+  int count;
+  sscanf(control, "%d", &count);
+  delete control;
+  zframe_t* syncframe=zmsg_next(*msg);
+  CHECK_EQ(count, data_.count());
+  CHECK_EQ(zframe_size(syncframe), count*sizeof(float));
+  float* syncptr=(float*)zframe_data(syncframe);
+  float* dptr=data_.mutable_cpu_data();
+  for(int i=0;i<count;i++){
+    dptr[i]+=syncptr[i];
+    syncptr[i]=dptr[i];
+  }
+  ps_handle_sync+=zclock_mono()-start;
+  return *msg;
+}
+zmsg_t *Param::GenSyncMsgFromWorker(float sample_ratio){
+  int64_t start=zclock_mono();
+  zmsg_t* msg=zmsg_new();
+  zmsg_addstrf(msg, "%d", data_.count());
+  zframe_t* frame=zframe_new(history_.cpu_data(), sizeof(float)*data_.count());
+  zmsg_append(msg, &frame);
+  worker_gen_sync+=zclock_mono()-start;
+  return msg;
+}
+void Param::ParseSyncMsgFromPS(zmsg_t** msg){
+  int64_t start=zclock_mono();
+  //LOG(ERROR)<<"worker sync "<<id();
+  char* control=zmsg_popstr(*msg);
+  int  count;
+  sscanf(control, "%d", &count);
+  //LOG(ERROR)<<"worker sync "<<id()<<" "<<control;
+  delete control;
+  zframe_t* psdataframe=zmsg_pop(*msg);
+  CHECK_EQ(zframe_size(psdataframe), count*sizeof(float));
+  float* psdptr=(float*)zframe_data(psdataframe);
+  float* dptr=data_.mutable_cpu_data();
+  memcpy(dptr, psdptr, sizeof(float)*data_.count());
+  zframe_destroy(&psdataframe);
+  worker_handle_sync+=zclock_mono()-start;
+  zmsg_destroy(msg);
+}
 
 void Param::Setup(const ParamProto& proto, const vector<int>& shape,
     int fan_in){
@@ -82,7 +125,7 @@ void Param::Init(){
     if(proto_.value())
       data*= proto_.value()/ sqrt(data_.shape()[0] +data_.shape()[1]);
     break;
-  case ParamProto::kGaussain:
+  case ParamProto::kGaussian:
     random->SampleGaussian(data, proto_.mean(), proto_.std());
     if(proto_.value())
       data*= proto_.value();

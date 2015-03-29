@@ -40,7 +40,11 @@ void NeuralNet::RegistryParam(string param_type){
   else if(param_type=="Elastic")
     factory->Register("Param",
         CreateInstance(ElasticParam, Param));
-  else LOG(ERROR)<<"Unkown parameter type "<<param_type;
+  else {
+    LOG(ERROR)<<"Use default parameter type "<<param_type;
+    factory->Register("Param",
+        CreateInstance(Param, Param));
+  }
 }
 NeuralNet::NeuralNet(NetProto net_proto, int group_size) {
   group_size_=group_size;

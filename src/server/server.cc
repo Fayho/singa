@@ -43,6 +43,7 @@ void HandleSyncFromWorker(zsock_t* pipe, void* args){
 }
 
 void Server::Run(){
+  LOG(ERROR)<<"Server on "<<cluster_->hostname()<<" is starting...";
   Router binder(cluster_->router_port());
   CHECK(binder.Bind(cluster_->server_addr(), cluster_->nworkers()));
   zsock_t* router=binder.router();
