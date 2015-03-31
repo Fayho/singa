@@ -82,6 +82,17 @@ ParamManager::~ParamManager(){
   zclock_sleep(2000);
 }
 
+void ParamManager::Checkpoint(string tofile){
+  BlobProtos bps;
+  for(auto entry: paramid2Param_){
+    bps.add_ids(entry.first);
+    bps.add_names(entry.second->name());
+    BlobProto *bp=bps.add_blobs();
+    entry.second->data().ToProto(bp);
+  }
+  WriteProtoToBinaryFile(bps, tofile.c_str());
+}
+
 
 void ParamManager::SyncConfig(float compute_time){
   float modelsize=param_->size()*1.0f*sizeof(float)/1024/1024; //MB

@@ -43,6 +43,7 @@
 #include <memory>
 #include <vector>
 #include <glog/logging.h>
+#include "proto/model.pb.h"
 using std::shared_ptr;
 using std::vector;
 
@@ -138,8 +139,8 @@ class Blob {
   Dtype* mutable_gpu_data();
   /*
   void FromProto(const BlobProto& proto);
-  void ToProto(BlobProto* proto) const;
   */
+  void ToProto(singa::BlobProto* proto) const;
 
   /// @brief Compute the sum of absolute values (L1 norm) of the data.
   Dtype asum_data() const;

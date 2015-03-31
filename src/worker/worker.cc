@@ -211,6 +211,10 @@ void Executor::RunOneBatch(int step, Performance* perf){
       LOG(ERROR)<<"\t"<<TimerInfo();
     }
   }
+
+  if(CheckpointNow(step)){
+    pm_->Checkpoint(cluster_->workspace()+"/snapshot-"+std::to_string(step));
+  }
 }
 
 void Executor::Pull(zsock_t* pull, shared_ptr<NeuralNet> net){

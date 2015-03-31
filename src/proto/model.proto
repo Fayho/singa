@@ -23,7 +23,11 @@ message ModelProto{
   optional int32 test_after_steps = 13 [default = 0];
   // frequency of test
   optional int32 test_frequency = 14 [default = 0];
-  optional bool prefetch=15[default=true];
+  optional int32 checkpoint_after_steps = 15 [default = 0];
+  // frequency of test
+  optional int32 checkpoint_frequency = 16 [default = 0];
+  optional bool prefetch=18[default=true];
+
 
   // total num of steps for training
   optional int32 train_steps = 20;
@@ -103,6 +107,12 @@ message ParamProto {
   optional float learning_rate_multiplier =13 [default=1];
   // multiplied on the global weight decay.
   optional float weight_decay_multiplier =14 [default=1];
+}
+
+message BlobProtos{
+  repeated BlobProto blobs=1;
+  repeated int32 ids=2;
+  repeated string names=3;
 }
 
 enum Phase {

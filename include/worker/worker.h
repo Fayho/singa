@@ -133,7 +133,17 @@ class Executor{
   const bool StopNow(const int step) const{
     return (step >= modelproto_.train_steps());
   }
-
+  /**
+   * Check is it time to do checkpoint.
+   * @param step the ::Train() has been called this num times.
+   */
+  const bool CheckpointNow(const int step) const{
+    return (cluster_->groupid()==0
+        && modelproto_.checkpoint_frequency() > 0
+        && step >= modelproto_.checkpoint_after_steps()
+        && ((step - modelproto_.checkpoint_after_steps())
+          % modelproto_.checkpoint_frequency() == 0));
+  }
   /**
    * Check is it time to do test.
    * @param step the ::Train() has been called this num times.

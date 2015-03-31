@@ -307,17 +307,23 @@ void Blob<Dtype>::FromProto(const BlobProto& proto) {
     data_vec[i] = proto.data(i);
   }
 }
+*/
 
 template <typename Dtype>
-void Blob<Dtype>::ToProto(BlobProto* proto) const {
-  proto->add_shape();
+void Blob<Dtype>::ToProto(singa::BlobProto* proto) const {
+  proto->set_num(shape_[0]);
+  if(shape_.size()>1)
+    proto->set_channels(shape_[1]);
+  if(shape_.size()>2)
+    proto->set_height(shape_[2]);
+  if(shape_.size()>3)
+    proto->set_width(shape_[3]);
   proto->clear_data();
   const Dtype* data_vec = cpu_data();
   for (int i = 0; i < count_; ++i) {
     proto->add_data(data_vec[i]);
   }
 }
-*/
 
 INSTANTIATE_CLASS(Blob);
 template class Blob<int>;

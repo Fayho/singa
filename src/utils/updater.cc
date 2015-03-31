@@ -81,7 +81,7 @@ void SGDUpdater::Update(int step, shared_ptr<Param> param, float grad_scale){
     data+=history;
   }else{
     grad*=-lr;
-    data+=lr*grad;
+    data+=grad;
   }
 }
 

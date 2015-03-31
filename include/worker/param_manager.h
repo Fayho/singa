@@ -78,6 +78,7 @@ class ParamManager{
    */
   void SyncConfig(float compute_time);
   bool SyncNow(int step);
+  void Checkpoint(string tofile);
 
  protected:
   bool hogwild_;

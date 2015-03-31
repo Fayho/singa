@@ -94,7 +94,7 @@ class Cluster {
     return std::to_string(cluster_.start_port()+2+k);
   }
   bool synchronous()const {return cluster_.synchronous();}
-  const string workerspace() {return cluster_.workspace();}
+  const string workspace() {return cluster_.workspace();}
   const string visualization_folder(){
     return cluster_.workspace()+"/"+cluster_.vis_subfolder();
   }
