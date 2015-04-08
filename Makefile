@@ -2,14 +2,14 @@
 # third-party library installation folder
 HOME_DIR := /home/wangwei/install
 # Lib folder for system and external libs. You may need to change it.
-LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib
+LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib
 # Header folder for system and external libs. You may need to change it.
 INCLUDE_DIRS := $(HOME_DIR)/include ./include
 # g++ location, should support c++11, tested with 4.8.1
 CXX := g++
 
 ######################Setting Varialbes#######################################
-LIBRARIES := glog gflags protobuf rt opencv_highgui opencv_imgproc opencv_core openblas gtest zmq czmq lmdb
+LIBRARIES := glog gflags protobuf rt opencv_highgui opencv_imgproc opencv_core zmq czmq lmdb openblas
 
 LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir)) $(foreach library, $(LIBRARIES), -l$(library))
 # Folder to store compiled files
@@ -41,49 +41,54 @@ TEST_SRCS := src/test/test_mnistlayer.cc src/test/test_main.cc
 TEST_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_SRCS:.cc=.o)) $(SINGA_OBJS))
 -include $(TEST_OBJS:%.o=%.P)
 
+TEST_PM_SRCS := src/test/test_pm.cc 
+TEST_PM_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_PM_SRCS:.cc=.o)) $(SINGA_OBJS))
+-include $(TEST_PM_OBJS:%.o=%.P)
+
 TEST_Router_Src := src/test/dist_test/test_router.cc
 TEST_Router_Obj := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_Router_Src:.cc=.o)) $(SINGA_OBJS))
 -include $(TEST_Router_Obj:%.o=%.P)
 
-OBJS := $(sort $(SINGA_OBJS) $(LOADER_OBJS) $(TEST_OBJS) $(TEST_Router_Obj))
+OBJS := $(sort $(SINGA_OBJS) $(LOADER_OBJS) $(TEST_OBJS) $(TEST_Router_Obj) $(TEST_PM_OBJS)) 
 
+SINGA_EXE = $(BUILD_DIR)/singa
 ########################Compilation Section###################################
-.PHONY: all proto init loader singa
+.PHONY: all singa
 
-all: singa loader
+singa: $(SINGA_EXE)
 
-singa: init proto  $(SINGA_OBJS)
+$(SINGA_EXE): $(PROTO_OBJS) $(SINGA_OBJS)
 	$(CXX) $(SINGA_OBJS) src/main.cc -o $(BUILD_DIR)/singa $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
-loader: init proto $(LOADER_OBJS)
+loader: proto $(LOADER_OBJS)
 	$(CXX) $(LOADER_OBJS) -o $(BUILD_DIR)/loader $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
-test: init proto $(TEST_OBJS)
+test:  proto $(TEST_OBJS)
 	$(CXX) $(TEST_OBJS) -o $(BUILD_DIR)/test $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
-router: init proto $(TEST_Router_Obj)
+router: proto $(TEST_Router_Obj)
 	$(CXX) $(TEST_Router_Obj) -o $(BUILD_DIR)/router $(CXXFLAGS) $(LDFLAGS)
+	@echo
+
+pm:	proto $(TEST_PM_OBJS)
+	$(CXX) $(TEST_PM_OBJS) -o $(BUILD_DIR)/pm $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
 # compile all files
 $(OBJS):$(BUILD_DIR)/%.o : %.cc
+	@mkdir -p $(dir $@)
 	$(CXX) $<  $(CXXFLAGS) -MMD -c -o $@
 	cp $(BUILD_DIR)/$*.d $(BUILD_DIR)/$*.P; \
 	sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 		-e '/^$$/ d' -e 's/$$/ :/' < $(BUILD_DIR)/$*.d >> $(BUILD_DIR)/$*.P; \
 	rm -f $*.d
 
-# create folders
-init:
-	@ mkdir -p $(foreach obj, $(OBJS), $(dir $(obj)))
-	@echo
+proto: $(PROTO_OBJS)
 
-proto: init $(PROTO_OBJS)
-
-$(PROTO_HDRS) $(PROTO_SRCS): $(PROTOS)
+$(PROTO_SRCS): $(PROTOS)
 	protoc --proto_path=src/proto --cpp_out=src/proto $(PROTOS)
 	mkdir -p include/proto/
 	cp src/proto/*.pb.h include/proto/

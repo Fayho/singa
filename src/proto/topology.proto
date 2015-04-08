@@ -1,0 +1,17 @@
+package singa;
+
+message Topology{
+	required int32 nservers = 2; 
+	required int32 nworker_groups = 3;
+	repeated int32 nserver_groups = 4;  
+	repeated ServerGroup server_group = 5;
+	required int32 port = 6; 
+	required int32 server_threads = 7; 
+	required int32 worker_threads = 8; 
+}
+
+message ServerGroup{
+	required int32 id = 9; 	
+	required int32 sync_interval = 10; 
+	repeated int32 neighbor = 11;
+}

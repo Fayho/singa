@@ -13,16 +13,40 @@ enum kMsgType{
 kGet=0,
 kPut=1,
 kSync=2,
-kStop
+kUpdate=3,
+kSyncRequest=4,
+kSyncResponse=5,
+kStop=6,
+kData=7
 };
 class Param {
  public:
    Param();
    virtual ~Param();
+
+  //Anh's stuff
+   //return only <content>
+   virtual zmsg_t* ParseToMsg(); /** Parse Param's content to zmsg_t message */
+
+   //msg of the format <kData><paramId><content>
+   virtual void ParseToParam(zmsg_t **msg);
+
+   //End of Anh's stuff
+
+
   /**
-   * handle put msg by server
+   * handle put msg by server.
+   * Return NULL if successful
    */
   virtual zmsg_t* HandlePutMsg(zmsg_t** msg);
+
+  /**
+   * handle update msg
+   * return NULL if unsuccesful.
+   * return the parameter message
+   */
+  virtual zmsg_t* HandleUpdateMsg(zmsg_t **msg);
+
   /**
    * handle get msg by server
    */
@@ -39,7 +63,6 @@ class Param {
    * parse sync msg by worker
    */
   virtual void ParseSyncMsgFromPS(zmsg_t** msg);
-
   /**
    * setup param shape
    */
@@ -138,6 +161,8 @@ class Param {
 
   ParamProto proto_;
   int fan_in_;
+
+  zmutex_t *param_lock_;
 };
 
 /**

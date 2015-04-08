@@ -3,4 +3,4 @@ SINGA
 
 Distributed deep learning system
 
-[Project Page](http://www.comp.nus.edu.sg/~dbsystem/singa/)
+[Project Page](http://singa.incubator.apache.org)

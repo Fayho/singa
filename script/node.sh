@@ -1,67 +1,71 @@
 #!/bin/bash
-folder="/data1/wangwei/singa/data/mnist/train"
-hostfile="examples/mnist/hostfile"
-if [ $# -eq 0 ]
+if [[ $# < 2 || ! -f $2 ]]
 then
-  echo "must provide argument, [chmod,ps, ssh,ls,cat, scp, cp, delete, create or reset] + hostfile"
+  echo "Usage: process/folder management"
+  echo "[cat, create, delete, kill, ls, ps, reset, scp, ssh] hostfile [args]"
+  echo "   cat hostfile file--- cat the file on every node in hostfile"
+  echo "   create hostfile folder--- create the folder on every node in hostfile"
+  echo "   delete hostfile folder--- delete the folder on every node in hostfile"
+  echo "   kill hostfile job_name---  kill the job on every node in hostfile"
+  echo "   ls hostfile folder--- list the folder on every node in hostfile"
+  echo "   ps hostfile job_name---  ps aux|grep job_name on every node in hostfile"
+  echo "   reset hostfile folder--- delete and create the folder on every node in hostfile"
+  echo "   scp hostfile local_dir [remote_dir]--- copy the local_dir to remote_dir on every node in hostfile, if remote_dir is omitted, remote_dir=local_dir"
+  echo "   ssh hostfile--- test whether the nodes in hostfile are alive"
+  echo "each line in hostfile is a node name followed by a space and other fields"
   exit
 fi
-hosts=(`cat $hostfile |cut -d ' ' -f 1`)
 
-if [ $1 == "cp" ]
-then
-  for i in {0..18}
-  do
-      echo ${hosts[i]} ${hosts[i+19]}
-      ssh ${hosts[i]} "scp -r wangwei@${hosts[i+19]}:/data1/wangwei/lapis/train-lmdb /data1/wangwei/lapis/train-lmdb" &
-  done
-fi
+ssh_options="-oStrictHostKeyChecking=no \
+-oUserKnownHostsFile=/dev/null \
+-oLogLevel=quiet"
+
+hosts=(`cat $2 |cut -d ' ' -f 1`)
 
 for i in ${hosts[@]}
 do
-  if [ $1 == "scp" ]
-  then
-    echo "scp -r $2 wangwei@$i:$2"
-    scp -r $2 wangwei@$i:$2
-  fi
-  if [ $1 == "ps" ]
-  then
-    echo "ssh $i"
-    ssh $i "ps ax|pgrep $2"
-  fi
-  if [ $1 == "chmod" ]
-  then
-    echo "ssh $i"
-    ssh $i "chmod 644 $folder"
-  fi
   if [ $1 == "cat" ]
   then
-    echo "ssh $i"
-    ssh $i "cat $folder"
-  fi
-  if [ $1 == "ls" ]
+    cmd="cat $3"
+  elif [ $1 == "create" -o $1 == "reset" ]
   then
-    echo "ssh $i"
-    ssh $i "ls -l $2 "
-  fi
-  if [ $1 == "ssh" ]
+    cmd="mkdir -p $3"
+  elif [ $1 == "delete" -o $1 == "reset" ]
   then
-    echo "ssh $i"
-    ssh $i "exit"
-  fi
-  if [ $1 == "delete" -o $1 == "reset" ]
+    cmd="rm -rf $3"
+  elif [ $1 == "kill" ]
   then
-    echo "delete $2 on $i"
-    ssh $i "rm -rf $2"
-  fi
-  if [ $1 == "create" -o $1 == "reset" ]
+    cmd="ps ax|pgrep $3 |xargs kill"
+  elif [ $1 == "ls" ]
   then
-    echo "create $folder on $i"
-    ssh $i "mkdir -p $folder"
-  fi
-  if [ $1 == "kill" ]
+    cmd="ls -l $3"
+  elif [ $1 == "scp" ]
   then
-    echo "kill $2 on $i"
-    ssh $i "ps ax|pgrep $2|xargs kill"
+    local_dir=$3
+    remote_dir=$3
+    if [ $# -eq 4 ]
+    then
+      remote_dir=$4
+    fi
+    r=''
+    if [[ -d $3 ]]
+    then
+      r='-r'
+    fi
+    echo "scp $r $local_dir $i:$remote_dir"
+    scp $r $local_dir $i:$remote_dir
+  elif [ $1 == "ssh" ]
+  then
+    cmd="exit"
+  elif [ $1 == "ps" ]
+  then
+    cmd="ps ax|pgrep $3"
+  else
+    echo "Incorrect commands:" $1
+  fi
+  if [ $1 != "scp" ]
+  then
+    echo $cmd
+    ssh $i $cmd
   fi
 done
