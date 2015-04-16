@@ -3,23 +3,27 @@ package singa;
 message ClusterProto{
   optional int32 nworkers=1;
   optional int32 nservers=2;
-  optional int32 start_port=3 [default=6723];
+  optional string hostfile=3;
   // partition workers into groups based on ID,
-  optional int32 nprocs_per_group=5 [default=1];
-  optional int32 nthreads_per_procs=6 [default=1];
-  optional int32 nthreads_per_server=7 [default=1];
+  optional int32 nworkers_per_group=5 [default=1];
+  optional int32 nservers_per_group=6 [default=1];
+  optional int32 nthreads_per_worker=7 [default=1];
+  optional int32 nthreads_per_server=8 [default=1];
 
   // local workspace, train/val/test shards, checkpoint files
-  required string workspace=10;
-
-  // relative path to workerspace will be created if not exist
-  optional string vis_subfolder=11 [default="vis"];
-  // relative path to workerspace will be created if not exist
-  optional string log_subfolder=12 [default="log"];
-
-  optional bool synchronous=15 [default=false];
-
+  required string workspace=11;
+  optional int32 start_port=10 [default=6723];
   // message size limit, default 1MB
   optional int32 largest_message=20 [default=1048576];
   optional float bandwidth=21 [default=100];//MB/s
+
+	repeated ServerTopology server_group = 30;
+}
+
+message ServerTopology{
+  // group id
+	required int32 id = 1;
+	optional int32 sync_interval = 2;
+  // neighbor group id
+	repeated int32 neighbor = 3;
 }

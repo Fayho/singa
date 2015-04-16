@@ -37,6 +37,7 @@ void protobuf_ShutdownFile_model_2eproto();
 class ModelProto;
 class NetProto;
 class ParamProto;
+class BlobProtos;
 class LayerProto;
 class RGBImage;
 class SplitProto;
@@ -79,7 +80,7 @@ inline bool ModelProto_GradCalcAlg_Parse(
 }
 enum ParamProto_InitMethod {
   ParamProto_InitMethod_kConstant = 0,
-  ParamProto_InitMethod_kGaussain = 1,
+  ParamProto_InitMethod_kGaussian = 1,
   ParamProto_InitMethod_kUniform = 2,
   ParamProto_InitMethod_kPretrained = 3,
   ParamProto_InitMethod_kGaussainSqrtFanIn = 4,
@@ -185,11 +186,12 @@ enum UpdaterProto_ChangeProto {
   UpdaterProto_ChangeProto_kInverse = 2,
   UpdaterProto_ChangeProto_kExponential = 3,
   UpdaterProto_ChangeProto_kLinear = 4,
-  UpdaterProto_ChangeProto_kStep = 5
+  UpdaterProto_ChangeProto_kStep = 5,
+  UpdaterProto_ChangeProto_kFixedStep = 6
 };
 bool UpdaterProto_ChangeProto_IsValid(int value);
 const UpdaterProto_ChangeProto UpdaterProto_ChangeProto_ChangeProto_MIN = UpdaterProto_ChangeProto_kFixed;
-const UpdaterProto_ChangeProto UpdaterProto_ChangeProto_ChangeProto_MAX = UpdaterProto_ChangeProto_kStep;
+const UpdaterProto_ChangeProto UpdaterProto_ChangeProto_ChangeProto_MAX = UpdaterProto_ChangeProto_kFixedStep;
 const int UpdaterProto_ChangeProto_ChangeProto_ARRAYSIZE = UpdaterProto_ChangeProto_ChangeProto_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* UpdaterProto_ChangeProto_descriptor();
@@ -431,10 +433,24 @@ class ModelProto : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 test_frequency() const;
   inline void set_test_frequency(::google::protobuf::int32 value);
 
-  // optional bool prefetch = 15 [default = true];
+  // optional int32 checkpoint_after_steps = 15 [default = 0];
+  inline bool has_checkpoint_after_steps() const;
+  inline void clear_checkpoint_after_steps();
+  static const int kCheckpointAfterStepsFieldNumber = 15;
+  inline ::google::protobuf::int32 checkpoint_after_steps() const;
+  inline void set_checkpoint_after_steps(::google::protobuf::int32 value);
+
+  // optional int32 checkpoint_frequency = 16 [default = 0];
+  inline bool has_checkpoint_frequency() const;
+  inline void clear_checkpoint_frequency();
+  static const int kCheckpointFrequencyFieldNumber = 16;
+  inline ::google::protobuf::int32 checkpoint_frequency() const;
+  inline void set_checkpoint_frequency(::google::protobuf::int32 value);
+
+  // optional bool prefetch = 18 [default = true];
   inline bool has_prefetch() const;
   inline void clear_prefetch();
-  static const int kPrefetchFieldNumber = 15;
+  static const int kPrefetchFieldNumber = 18;
   inline bool prefetch() const;
   inline void set_prefetch(bool value);
 
@@ -520,6 +536,10 @@ class ModelProto : public ::google::protobuf::Message {
   inline void clear_has_test_after_steps();
   inline void set_has_test_frequency();
   inline void clear_has_test_frequency();
+  inline void set_has_checkpoint_after_steps();
+  inline void clear_has_checkpoint_after_steps();
+  inline void set_has_checkpoint_frequency();
+  inline void clear_has_checkpoint_frequency();
   inline void set_has_prefetch();
   inline void clear_has_prefetch();
   inline void set_has_train_steps();
@@ -554,6 +574,8 @@ class ModelProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 validation_frequency_;
   ::google::protobuf::int32 test_after_steps_;
   ::google::protobuf::int32 test_frequency_;
+  ::google::protobuf::int32 checkpoint_after_steps_;
+  ::google::protobuf::int32 checkpoint_frequency_;
   ::google::protobuf::int32 train_steps_;
   ::google::protobuf::int32 validation_steps_;
   ::google::protobuf::int32 test_steps_;
@@ -565,7 +587,7 @@ class ModelProto : public ::google::protobuf::Message {
   ::singa::NetProto* neuralnet_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(19 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(21 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -725,7 +747,7 @@ class ParamProto : public ::google::protobuf::Message {
 
   typedef ParamProto_InitMethod InitMethod;
   static const InitMethod kConstant = ParamProto_InitMethod_kConstant;
-  static const InitMethod kGaussain = ParamProto_InitMethod_kGaussain;
+  static const InitMethod kGaussian = ParamProto_InitMethod_kGaussian;
   static const InitMethod kUniform = ParamProto_InitMethod_kUniform;
   static const InitMethod kPretrained = ParamProto_InitMethod_kPretrained;
   static const InitMethod kGaussainSqrtFanIn = ParamProto_InitMethod_kGaussainSqrtFanIn;
@@ -907,6 +929,121 @@ class ParamProto : public ::google::protobuf::Message {
 
   void InitAsDefaultInstance();
   static ParamProto* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class BlobProtos : public ::google::protobuf::Message {
+ public:
+  BlobProtos();
+  virtual ~BlobProtos();
+
+  BlobProtos(const BlobProtos& from);
+
+  inline BlobProtos& operator=(const BlobProtos& from) {
+    CopyFrom(from);
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const BlobProtos& default_instance();
+
+  void Swap(BlobProtos* other);
+
+  // implements Message ----------------------------------------------
+
+  BlobProtos* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const BlobProtos& from);
+  void MergeFrom(const BlobProtos& from);
+  void Clear();
+  bool IsInitialized() const;
+
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+
+  ::google::protobuf::Metadata GetMetadata() const;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // repeated .singa.BlobProto blobs = 1;
+  inline int blobs_size() const;
+  inline void clear_blobs();
+  static const int kBlobsFieldNumber = 1;
+  inline const ::singa::BlobProto& blobs(int index) const;
+  inline ::singa::BlobProto* mutable_blobs(int index);
+  inline ::singa::BlobProto* add_blobs();
+  inline const ::google::protobuf::RepeatedPtrField< ::singa::BlobProto >&
+      blobs() const;
+  inline ::google::protobuf::RepeatedPtrField< ::singa::BlobProto >*
+      mutable_blobs();
+
+  // repeated int32 ids = 2;
+  inline int ids_size() const;
+  inline void clear_ids();
+  static const int kIdsFieldNumber = 2;
+  inline ::google::protobuf::int32 ids(int index) const;
+  inline void set_ids(int index, ::google::protobuf::int32 value);
+  inline void add_ids(::google::protobuf::int32 value);
+  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+      ids() const;
+  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+      mutable_ids();
+
+  // repeated string names = 3;
+  inline int names_size() const;
+  inline void clear_names();
+  static const int kNamesFieldNumber = 3;
+  inline const ::std::string& names(int index) const;
+  inline ::std::string* mutable_names(int index);
+  inline void set_names(int index, const ::std::string& value);
+  inline void set_names(int index, const char* value);
+  inline void set_names(int index, const char* value, size_t size);
+  inline ::std::string* add_names();
+  inline void add_names(const ::std::string& value);
+  inline void add_names(const char* value);
+  inline void add_names(const char* value, size_t size);
+  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& names() const;
+  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_names();
+
+  // @@protoc_insertion_point(class_scope:singa.BlobProtos)
+ private:
+
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+
+  ::google::protobuf::RepeatedPtrField< ::singa::BlobProto > blobs_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > ids_;
+  ::google::protobuf::RepeatedPtrField< ::std::string> names_;
+
+  mutable int _cached_size_;
+  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+
+  friend void  protobuf_AddDesc_model_2eproto();
+  friend void protobuf_AssignDesc_model_2eproto();
+  friend void protobuf_ShutdownFile_model_2eproto();
+
+  void InitAsDefaultInstance();
+  static BlobProtos* default_instance_;
 };
 // -------------------------------------------------------------------
 
@@ -1360,6 +1497,18 @@ class RGBImage : public ::google::protobuf::Message {
   inline bool mirror() const;
   inline void set_mirror(bool value);
 
+  // optional string meanfile = 4;
+  inline bool has_meanfile() const;
+  inline void clear_meanfile();
+  static const int kMeanfileFieldNumber = 4;
+  inline const ::std::string& meanfile() const;
+  inline void set_meanfile(const ::std::string& value);
+  inline void set_meanfile(const char* value);
+  inline void set_meanfile(const char* value, size_t size);
+  inline ::std::string* mutable_meanfile();
+  inline ::std::string* release_meanfile();
+  inline void set_allocated_meanfile(::std::string* meanfile);
+
   // @@protoc_insertion_point(class_scope:singa.RGBImage)
  private:
   inline void set_has_scale();
@@ -1368,15 +1517,18 @@ class RGBImage : public ::google::protobuf::Message {
   inline void clear_has_cropsize();
   inline void set_has_mirror();
   inline void clear_has_mirror();
+  inline void set_has_meanfile();
+  inline void clear_has_meanfile();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   float scale_;
   ::google::protobuf::int32 cropsize_;
+  ::std::string* meanfile_;
   bool mirror_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(3 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -3257,6 +3409,7 @@ class UpdaterProto : public ::google::protobuf::Message {
   static const ChangeProto kExponential = UpdaterProto_ChangeProto_kExponential;
   static const ChangeProto kLinear = UpdaterProto_ChangeProto_kLinear;
   static const ChangeProto kStep = UpdaterProto_ChangeProto_kStep;
+  static const ChangeProto kFixedStep = UpdaterProto_ChangeProto_kFixedStep;
   static inline bool ChangeProto_IsValid(int value) {
     return UpdaterProto_ChangeProto_IsValid(value);
   }
@@ -3385,7 +3538,7 @@ class UpdaterProto : public ::google::protobuf::Message {
   inline float moving_rate() const;
   inline void set_moving_rate(float value);
 
-  // optional string param_type = 27 [default = "Elastic"];
+  // optional string param_type = 27 [default = "Param"];
   inline bool has_param_type() const;
   inline void clear_param_type();
   static const int kParamTypeFieldNumber = 27;
@@ -3396,6 +3549,30 @@ class UpdaterProto : public ::google::protobuf::Message {
   inline ::std::string* mutable_param_type();
   inline ::std::string* release_param_type();
   inline void set_allocated_param_type(::std::string* param_type);
+
+  // repeated int32 step = 28;
+  inline int step_size() const;
+  inline void clear_step();
+  static const int kStepFieldNumber = 28;
+  inline ::google::protobuf::int32 step(int index) const;
+  inline void set_step(int index, ::google::protobuf::int32 value);
+  inline void add_step(::google::protobuf::int32 value);
+  inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+      step() const;
+  inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+      mutable_step();
+
+  // repeated float step_lr = 29;
+  inline int step_lr_size() const;
+  inline void clear_step_lr();
+  static const int kStepLrFieldNumber = 29;
+  inline float step_lr(int index) const;
+  inline void set_step_lr(int index, float value);
+  inline void add_step_lr(float value);
+  inline const ::google::protobuf::RepeatedField< float >&
+      step_lr() const;
+  inline ::google::protobuf::RepeatedField< float >*
+      mutable_step_lr();
 
   // @@protoc_insertion_point(class_scope:singa.UpdaterProto)
  private:
@@ -3450,10 +3627,12 @@ class UpdaterProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 warmup_steps_;
   ::std::string* param_type_;
   static ::std::string* _default_param_type_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > step_;
+  ::google::protobuf::RepeatedField< float > step_lr_;
   float moving_rate_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(16 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(18 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -4021,15 +4200,59 @@ inline void ModelProto::set_test_frequency(::google::protobuf::int32 value) {
   test_frequency_ = value;
 }
 
-// optional bool prefetch = 15 [default = true];
-inline bool ModelProto::has_prefetch() const {
+// optional int32 checkpoint_after_steps = 15 [default = 0];
+inline bool ModelProto::has_checkpoint_after_steps() const {
   return (_has_bits_[0] & 0x00000400u) != 0;
 }
-inline void ModelProto::set_has_prefetch() {
+inline void ModelProto::set_has_checkpoint_after_steps() {
   _has_bits_[0] |= 0x00000400u;
 }
-inline void ModelProto::clear_has_prefetch() {
+inline void ModelProto::clear_has_checkpoint_after_steps() {
   _has_bits_[0] &= ~0x00000400u;
+}
+inline void ModelProto::clear_checkpoint_after_steps() {
+  checkpoint_after_steps_ = 0;
+  clear_has_checkpoint_after_steps();
+}
+inline ::google::protobuf::int32 ModelProto::checkpoint_after_steps() const {
+  return checkpoint_after_steps_;
+}
+inline void ModelProto::set_checkpoint_after_steps(::google::protobuf::int32 value) {
+  set_has_checkpoint_after_steps();
+  checkpoint_after_steps_ = value;
+}
+
+// optional int32 checkpoint_frequency = 16 [default = 0];
+inline bool ModelProto::has_checkpoint_frequency() const {
+  return (_has_bits_[0] & 0x00000800u) != 0;
+}
+inline void ModelProto::set_has_checkpoint_frequency() {
+  _has_bits_[0] |= 0x00000800u;
+}
+inline void ModelProto::clear_has_checkpoint_frequency() {
+  _has_bits_[0] &= ~0x00000800u;
+}
+inline void ModelProto::clear_checkpoint_frequency() {
+  checkpoint_frequency_ = 0;
+  clear_has_checkpoint_frequency();
+}
+inline ::google::protobuf::int32 ModelProto::checkpoint_frequency() const {
+  return checkpoint_frequency_;
+}
+inline void ModelProto::set_checkpoint_frequency(::google::protobuf::int32 value) {
+  set_has_checkpoint_frequency();
+  checkpoint_frequency_ = value;
+}
+
+// optional bool prefetch = 18 [default = true];
+inline bool ModelProto::has_prefetch() const {
+  return (_has_bits_[0] & 0x00001000u) != 0;
+}
+inline void ModelProto::set_has_prefetch() {
+  _has_bits_[0] |= 0x00001000u;
+}
+inline void ModelProto::clear_has_prefetch() {
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void ModelProto::clear_prefetch() {
   prefetch_ = true;
@@ -4045,13 +4268,13 @@ inline void ModelProto::set_prefetch(bool value) {
 
 // optional int32 train_steps = 20;
 inline bool ModelProto::has_train_steps() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00002000u) != 0;
 }
 inline void ModelProto::set_has_train_steps() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00002000u;
 }
 inline void ModelProto::clear_has_train_steps() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline void ModelProto::clear_train_steps() {
   train_steps_ = 0;
@@ -4067,13 +4290,13 @@ inline void ModelProto::set_train_steps(::google::protobuf::int32 value) {
 
 // optional int32 validation_steps = 21;
 inline bool ModelProto::has_validation_steps() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00004000u) != 0;
 }
 inline void ModelProto::set_has_validation_steps() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00004000u;
 }
 inline void ModelProto::clear_has_validation_steps() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00004000u;
 }
 inline void ModelProto::clear_validation_steps() {
   validation_steps_ = 0;
@@ -4089,13 +4312,13 @@ inline void ModelProto::set_validation_steps(::google::protobuf::int32 value) {
 
 // optional int32 test_steps = 22;
 inline bool ModelProto::has_test_steps() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00008000u) != 0;
 }
 inline void ModelProto::set_has_test_steps() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00008000u;
 }
 inline void ModelProto::clear_has_test_steps() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00008000u;
 }
 inline void ModelProto::clear_test_steps() {
   test_steps_ = 0;
@@ -4111,13 +4334,13 @@ inline void ModelProto::set_test_steps(::google::protobuf::int32 value) {
 
 // optional int32 step = 29 [default = 0];
 inline bool ModelProto::has_step() const {
-  return (_has_bits_[0] & 0x00004000u) != 0;
+  return (_has_bits_[0] & 0x00010000u) != 0;
 }
 inline void ModelProto::set_has_step() {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00010000u;
 }
 inline void ModelProto::clear_has_step() {
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00010000u;
 }
 inline void ModelProto::clear_step() {
   step_ = 0;
@@ -4133,13 +4356,13 @@ inline void ModelProto::set_step(::google::protobuf::int32 value) {
 
 // optional .singa.UpdaterProto updater = 31;
 inline bool ModelProto::has_updater() const {
-  return (_has_bits_[0] & 0x00008000u) != 0;
+  return (_has_bits_[0] & 0x00020000u) != 0;
 }
 inline void ModelProto::set_has_updater() {
-  _has_bits_[0] |= 0x00008000u;
+  _has_bits_[0] |= 0x00020000u;
 }
 inline void ModelProto::clear_has_updater() {
-  _has_bits_[0] &= ~0x00008000u;
+  _has_bits_[0] &= ~0x00020000u;
 }
 inline void ModelProto::clear_updater() {
   if (updater_ != NULL) updater_->::singa::UpdaterProto::Clear();
@@ -4171,13 +4394,13 @@ inline void ModelProto::set_allocated_updater(::singa::UpdaterProto* updater) {
 
 // optional .singa.ModelProto.GradCalcAlg alg = 32 [default = kBackPropagation];
 inline bool ModelProto::has_alg() const {
-  return (_has_bits_[0] & 0x00010000u) != 0;
+  return (_has_bits_[0] & 0x00040000u) != 0;
 }
 inline void ModelProto::set_has_alg() {
-  _has_bits_[0] |= 0x00010000u;
+  _has_bits_[0] |= 0x00040000u;
 }
 inline void ModelProto::clear_has_alg() {
-  _has_bits_[0] &= ~0x00010000u;
+  _has_bits_[0] &= ~0x00040000u;
 }
 inline void ModelProto::clear_alg() {
   alg_ = 1;
@@ -4194,13 +4417,13 @@ inline void ModelProto::set_alg(::singa::ModelProto_GradCalcAlg value) {
 
 // optional .singa.NetProto neuralnet = 40;
 inline bool ModelProto::has_neuralnet() const {
-  return (_has_bits_[0] & 0x00020000u) != 0;
+  return (_has_bits_[0] & 0x00080000u) != 0;
 }
 inline void ModelProto::set_has_neuralnet() {
-  _has_bits_[0] |= 0x00020000u;
+  _has_bits_[0] |= 0x00080000u;
 }
 inline void ModelProto::clear_has_neuralnet() {
-  _has_bits_[0] &= ~0x00020000u;
+  _has_bits_[0] &= ~0x00080000u;
 }
 inline void ModelProto::clear_neuralnet() {
   if (neuralnet_ != NULL) neuralnet_->::singa::NetProto::Clear();
@@ -4232,13 +4455,13 @@ inline void ModelProto::set_allocated_neuralnet(::singa::NetProto* neuralnet) {
 
 // optional bool debug = 41 [default = false];
 inline bool ModelProto::has_debug() const {
-  return (_has_bits_[0] & 0x00040000u) != 0;
+  return (_has_bits_[0] & 0x00100000u) != 0;
 }
 inline void ModelProto::set_has_debug() {
-  _has_bits_[0] |= 0x00040000u;
+  _has_bits_[0] |= 0x00100000u;
 }
 inline void ModelProto::clear_has_debug() {
-  _has_bits_[0] &= ~0x00040000u;
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline void ModelProto::clear_debug() {
   debug_ = false;
@@ -4644,6 +4867,104 @@ inline float ParamProto::weight_decay_multiplier() const {
 inline void ParamProto::set_weight_decay_multiplier(float value) {
   set_has_weight_decay_multiplier();
   weight_decay_multiplier_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// BlobProtos
+
+// repeated .singa.BlobProto blobs = 1;
+inline int BlobProtos::blobs_size() const {
+  return blobs_.size();
+}
+inline void BlobProtos::clear_blobs() {
+  blobs_.Clear();
+}
+inline const ::singa::BlobProto& BlobProtos::blobs(int index) const {
+  return blobs_.Get(index);
+}
+inline ::singa::BlobProto* BlobProtos::mutable_blobs(int index) {
+  return blobs_.Mutable(index);
+}
+inline ::singa::BlobProto* BlobProtos::add_blobs() {
+  return blobs_.Add();
+}
+inline const ::google::protobuf::RepeatedPtrField< ::singa::BlobProto >&
+BlobProtos::blobs() const {
+  return blobs_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::singa::BlobProto >*
+BlobProtos::mutable_blobs() {
+  return &blobs_;
+}
+
+// repeated int32 ids = 2;
+inline int BlobProtos::ids_size() const {
+  return ids_.size();
+}
+inline void BlobProtos::clear_ids() {
+  ids_.Clear();
+}
+inline ::google::protobuf::int32 BlobProtos::ids(int index) const {
+  return ids_.Get(index);
+}
+inline void BlobProtos::set_ids(int index, ::google::protobuf::int32 value) {
+  ids_.Set(index, value);
+}
+inline void BlobProtos::add_ids(::google::protobuf::int32 value) {
+  ids_.Add(value);
+}
+inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+BlobProtos::ids() const {
+  return ids_;
+}
+inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+BlobProtos::mutable_ids() {
+  return &ids_;
+}
+
+// repeated string names = 3;
+inline int BlobProtos::names_size() const {
+  return names_.size();
+}
+inline void BlobProtos::clear_names() {
+  names_.Clear();
+}
+inline const ::std::string& BlobProtos::names(int index) const {
+  return names_.Get(index);
+}
+inline ::std::string* BlobProtos::mutable_names(int index) {
+  return names_.Mutable(index);
+}
+inline void BlobProtos::set_names(int index, const ::std::string& value) {
+  names_.Mutable(index)->assign(value);
+}
+inline void BlobProtos::set_names(int index, const char* value) {
+  names_.Mutable(index)->assign(value);
+}
+inline void BlobProtos::set_names(int index, const char* value, size_t size) {
+  names_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* BlobProtos::add_names() {
+  return names_.Add();
+}
+inline void BlobProtos::add_names(const ::std::string& value) {
+  names_.Add()->assign(value);
+}
+inline void BlobProtos::add_names(const char* value) {
+  names_.Add()->assign(value);
+}
+inline void BlobProtos::add_names(const char* value, size_t size) {
+  names_.Add()->assign(reinterpret_cast<const char*>(value), size);
+}
+inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
+BlobProtos::names() const {
+  return names_;
+}
+inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+BlobProtos::mutable_names() {
+  return &names_;
 }
 
 // -------------------------------------------------------------------
@@ -5641,6 +5962,76 @@ inline bool RGBImage::mirror() const {
 inline void RGBImage::set_mirror(bool value) {
   set_has_mirror();
   mirror_ = value;
+}
+
+// optional string meanfile = 4;
+inline bool RGBImage::has_meanfile() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void RGBImage::set_has_meanfile() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void RGBImage::clear_has_meanfile() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline void RGBImage::clear_meanfile() {
+  if (meanfile_ != &::google::protobuf::internal::kEmptyString) {
+    meanfile_->clear();
+  }
+  clear_has_meanfile();
+}
+inline const ::std::string& RGBImage::meanfile() const {
+  return *meanfile_;
+}
+inline void RGBImage::set_meanfile(const ::std::string& value) {
+  set_has_meanfile();
+  if (meanfile_ == &::google::protobuf::internal::kEmptyString) {
+    meanfile_ = new ::std::string;
+  }
+  meanfile_->assign(value);
+}
+inline void RGBImage::set_meanfile(const char* value) {
+  set_has_meanfile();
+  if (meanfile_ == &::google::protobuf::internal::kEmptyString) {
+    meanfile_ = new ::std::string;
+  }
+  meanfile_->assign(value);
+}
+inline void RGBImage::set_meanfile(const char* value, size_t size) {
+  set_has_meanfile();
+  if (meanfile_ == &::google::protobuf::internal::kEmptyString) {
+    meanfile_ = new ::std::string;
+  }
+  meanfile_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* RGBImage::mutable_meanfile() {
+  set_has_meanfile();
+  if (meanfile_ == &::google::protobuf::internal::kEmptyString) {
+    meanfile_ = new ::std::string;
+  }
+  return meanfile_;
+}
+inline ::std::string* RGBImage::release_meanfile() {
+  clear_has_meanfile();
+  if (meanfile_ == &::google::protobuf::internal::kEmptyString) {
+    return NULL;
+  } else {
+    ::std::string* temp = meanfile_;
+    meanfile_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    return temp;
+  }
+}
+inline void RGBImage::set_allocated_meanfile(::std::string* meanfile) {
+  if (meanfile_ != &::google::protobuf::internal::kEmptyString) {
+    delete meanfile_;
+  }
+  if (meanfile) {
+    set_has_meanfile();
+    meanfile_ = meanfile;
+  } else {
+    clear_has_meanfile();
+    meanfile_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  }
 }
 
 // -------------------------------------------------------------------
@@ -7429,7 +7820,7 @@ inline void UpdaterProto::set_moving_rate(float value) {
   moving_rate_ = value;
 }
 
-// optional string param_type = 27 [default = "Elastic"];
+// optional string param_type = 27 [default = "Param"];
 inline bool UpdaterProto::has_param_type() const {
   return (_has_bits_[0] & 0x00008000u) != 0;
 }
@@ -7497,6 +7888,56 @@ inline void UpdaterProto::set_allocated_param_type(::std::string* param_type) {
     clear_has_param_type();
     param_type_ = const_cast< ::std::string*>(_default_param_type_);
   }
+}
+
+// repeated int32 step = 28;
+inline int UpdaterProto::step_size() const {
+  return step_.size();
+}
+inline void UpdaterProto::clear_step() {
+  step_.Clear();
+}
+inline ::google::protobuf::int32 UpdaterProto::step(int index) const {
+  return step_.Get(index);
+}
+inline void UpdaterProto::set_step(int index, ::google::protobuf::int32 value) {
+  step_.Set(index, value);
+}
+inline void UpdaterProto::add_step(::google::protobuf::int32 value) {
+  step_.Add(value);
+}
+inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
+UpdaterProto::step() const {
+  return step_;
+}
+inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
+UpdaterProto::mutable_step() {
+  return &step_;
+}
+
+// repeated float step_lr = 29;
+inline int UpdaterProto::step_lr_size() const {
+  return step_lr_.size();
+}
+inline void UpdaterProto::clear_step_lr() {
+  step_lr_.Clear();
+}
+inline float UpdaterProto::step_lr(int index) const {
+  return step_lr_.Get(index);
+}
+inline void UpdaterProto::set_step_lr(int index, float value) {
+  step_lr_.Set(index, value);
+}
+inline void UpdaterProto::add_step_lr(float value) {
+  step_lr_.Add(value);
+}
+inline const ::google::protobuf::RepeatedField< float >&
+UpdaterProto::step_lr() const {
+  return step_lr_;
+}
+inline ::google::protobuf::RepeatedField< float >*
+UpdaterProto::mutable_step_lr() {
+  return &step_lr_;
 }
 
 // -------------------------------------------------------------------

@@ -1,6 +1,6 @@
 ###################User Config Varaibles #############################
 # third-party library installation folder
-HOME_DIR := /home/wangwei/install
+HOME_DIR := /usr/ #/home/wangwei/install
 # Lib folder for system and external libs. You may need to change it.
 LIBRARY_DIRS := $(HOME_DIR)/lib64 $(HOME_DIR)/lib $(HOME_DIR)/local/lib
 # Header folder for system and external libs. You may need to change it.
@@ -9,7 +9,7 @@ INCLUDE_DIRS := $(HOME_DIR)/include ./include
 CXX := g++
 
 ######################Setting Varialbes#######################################
-LIBRARIES := glog gflags protobuf rt opencv_highgui opencv_imgproc opencv_core zmq czmq lmdb openblas
+LIBRARIES := glog gflags protobuf rt opencv_highgui opencv_imgproc opencv_core  lmdb openblas #zmq czmq
 
 LDFLAGS := $(foreach librarydir, $(LIBRARY_DIRS), -L$(librarydir)) $(foreach library, $(LIBRARIES), -l$(library))
 # Folder to store compiled files
@@ -30,6 +30,7 @@ PROTO_OBJS :=$(addprefix $(BUILD_DIR)/, $(PROTO_SRCS:.cc=.o))
 # each singa src file will generate a .o file
 SINGA_SRCS := $(shell find src/ \( -path "src/test" -o -path "src/main.cc" \) -prune \
 	-o \( -name "*.cc" -type f \) -print )
+SINGA_SRCS := src/utils/cluster.cc
 SINGA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_SRCS:.cc=.o)) $(PROTO_OBJS) )
 -include $(SINGA_OBJS:%.o=%.P)
 
@@ -37,11 +38,16 @@ LOADER_SRCS :=$(shell find tools/data_loader/ -name "*.cc") src/utils/shard.cc
 LOADER_OBJS :=$(sort $(addprefix $(BUILD_DIR)/, $(LOADER_SRCS:.cc=.o)) $(PROTO_OBJS) )
 -include $(LOADER_OBJS:%.o=%.P)
 
-TEST_SRCS := src/test/test_mnistlayer.cc src/test/test_main.cc
-TEST_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_SRCS:.cc=.o)) $(SINGA_OBJS))
+TEST_SRCS := src/test/test_cluster.cc
+TEST_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_SRCS:.cc=.o)))
 -include $(TEST_OBJS:%.o=%.P)
 
-TEST_PM_SRCS := src/test/test_pm.cc 
+GTEST_SRC := include/gtest/gtest-all.cc
+GTEST_HDR := include/gtest/gtest.h
+GTEST_LIB := $(BUILD_DIR)/libgtest.a
+
+
+TEST_PM_SRCS := src/test/test_pm.cc
 TEST_PM_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_PM_SRCS:.cc=.o)) $(SINGA_OBJS))
 -include $(TEST_PM_OBJS:%.o=%.P)
 
@@ -49,7 +55,7 @@ TEST_Router_Src := src/test/dist_test/test_router.cc
 TEST_Router_Obj := $(sort $(addprefix $(BUILD_DIR)/, $(TEST_Router_Src:.cc=.o)) $(SINGA_OBJS))
 -include $(TEST_Router_Obj:%.o=%.P)
 
-OBJS := $(sort $(SINGA_OBJS) $(LOADER_OBJS) $(TEST_OBJS) $(TEST_Router_Obj) $(TEST_PM_OBJS)) 
+OBJS := $(sort $(SINGA_OBJS) $(LOADER_OBJS) $(TEST_OBJS) $(TEST_Router_Obj) $(TEST_PM_OBJS))
 
 SINGA_EXE = $(BUILD_DIR)/singa
 ########################Compilation Section###################################
@@ -65,9 +71,14 @@ loader: proto $(LOADER_OBJS)
 	$(CXX) $(LOADER_OBJS) -o $(BUILD_DIR)/loader $(CXXFLAGS) $(LDFLAGS)
 	@echo
 
-test:  proto $(TEST_OBJS)
-	$(CXX) $(TEST_OBJS) -o $(BUILD_DIR)/test $(CXXFLAGS) $(LDFLAGS)
+test:  proto $(GTEST_LIB) $(TEST_OBJS) $(SINGA_OBJS)
+	$(CXX) $(TEST_OBJS) include/gtest/gtest_main.cc $(BUILD_DIR)/libgtest.a \
+		$(SINGA_OBJS) -o $(BUILD_DIR)/test $(CXXFLAGS) $(LDFLAGS)
 	@echo
+
+$(GTEST_LIB): $(GTEST_HDR) $(GTEST_SRC)
+	$(CXX) $(GTEST_SRC) -c -o $(BUILD_DIR)/gtest-all.o $(CXXFLAGS)
+	ar -rv $(BUILD_DIR)/libgtest.a $(BUILD_DIR)/gtest-all.o
 
 router: proto $(TEST_Router_Obj)
 	$(CXX) $(TEST_Router_Obj) -o $(BUILD_DIR)/router $(CXXFLAGS) $(LDFLAGS)

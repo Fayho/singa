@@ -8,37 +8,31 @@
 namespace singa {
 
 std::shared_ptr<Cluster> Cluster::instance_;
-Cluster::Cluster(const ClusterProto &cluster, string hostfile, int procsid) {
-  global_procsid_=procsid;
+Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
+  procs_id_=procs_id;
 	cluster_ = cluster;
+  auto nhosts=cluster_.nservers()+cluster_.nworkers();
+  CHECK_LT(procs_id, nhosts);
   SetupFolders(cluster);
-  char hostname[256];
-  gethostname(hostname, sizeof(hostname));
-  hostname_=string(hostname);
+  //char hostname[256]; gethostname(hostname, sizeof(hostname));
 
-  if(cluster_.nworkers()>0&&cluster_.nservers()>0){
-    std::ifstream ifs(hostfile, std::ifstream::in);
+  if(cluster_.nworkers()>0){
+    std::ifstream ifs(cluster.hostfile(), std::ifstream::in);
     std::string line;
-    while(std::getline(ifs, line)){
-      addr_.push_back(line);
+    while(std::getline(ifs, line)&&hosts_.size()<nhosts){
+      hosts_.push_back(line);
     }
+    CHECK_EQ(hosts_.size(), nhosts);
   }
-  //CHECK_EQ(addr_.size(), cluster_.nservers()+cluster_.nworkers());
 }
 
 void Cluster::SetupFolders(const ClusterProto &cluster){
   // create visulization folder
-  mkdir(visualization_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  mkdir(vis_folder().c_str(),  S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 }
 
-void Cluster::SetupGroups(const ClusterProto &cluster){
-}
-
-shared_ptr<Cluster> Cluster::Get(const ClusterProto& cluster, string hostfile,
-    int procsid){
-  if(!instance_) {
-    instance_.reset(new Cluster(cluster, hostfile, procsid));
-  }
+shared_ptr<Cluster> Cluster::Get(const ClusterProto& cluster, int procs_id){
+  instance_.reset(new Cluster(cluster, procs_id));
   return instance_;
 }
 

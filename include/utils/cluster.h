@@ -14,63 +14,106 @@ using std::vector;
 namespace singa {
 
 /**
- * Cluster is a singlton object, which provides cluster configuations,
- * e.g., num workers/servers
+ * Cluster is a singleton object, which provides cluster configuations,
+ * e.g., the topology of the cluster.
+ * All IDs start from 0.
  */
 class Cluster {
  public:
   static shared_ptr<Cluster> Get();
-  static shared_ptr<Cluster> Get(const ClusterProto& cluster,string hostfile,
-    int procsid);
+  static shared_ptr<Cluster> Get(const ClusterProto& cluster, int procs_id);
 
-  void SetupGroups(const ClusterProto &cluster);
-  void SetupFolders(const ClusterProto &cluster);
-
+  /**
+   * @return total num of server procs
+   */
   const int nservers()const{
     return cluster_.nservers();
   }
+  /**
+   * @return total num of worker procs
+   */
   const int nworkers()const {
     return cluster_.nworkers();
   }
-  bool AmIServer()const {
-    return global_procsid_>=nworkers()
-      &&global_procsid_<nworkers()+nservers();
-  }
-  bool AmIWorker()const {
-    return global_procsid_>=0&&global_procsid_<nworkers();
-  }
-  int nprocs_per_group()const {return cluster_.nprocs_per_group();}
-  int nthreads_per_procs()const{return cluster_.nthreads_per_procs();}
+  int nworkers_per_group()const {return cluster_.nworkers_per_group();}
+  int nservers_per_group()const {return cluster_.nservers_per_group();}
+  int nthreads_per_worker()const{return cluster_.nthreads_per_worker();}
   int nthreads_per_server()const{return cluster_.nthreads_per_server();}
-  int global_procsid()const {return global_procsid_;}
+
+  /**
+   * @return true if the calling procs is a server procs, otherwise false
+   */
+  bool AmIServer()const {
+    return procs_id_>=nworkers()&&procs_id_<nworkers()+nservers();
+  }
+  /**
+   * @return true if the calling procs is a worker procs, otherwise false
+   */
+  bool AmIWorker()const {
+    return procs_id_>=0&&procs_id_<nworkers();
+  }
+  /**
+   * @return global procs id, which starts from 0.
+   */
+  int procs_id()const {return procs_id_;}
+  /**
+   * @return procs id within a (worker or server) group (starts from 0).
+   */
+  int group_procs_id() const {
+    if(AmIServer())
+      return (procs_id_-nworkers())%nservers_per_group();
+    else
+      return (procs_id_)%nworkers_per_group();
+  }
+  /**
+   * @return (worker or server) group id
+   */
+  int group_id() const {
+     if(AmIServer())
+      return (procs_id_-nworkers())/nservers_per_group();
+    else
+      return (procs_id_)/nworkers_per_group();
+  }
+  /**
+   * @return num of worker groups.
+   */
+  int nworker_groups() const{return cluster_.nworkers()/nworkers_per_group();}
+  /**
+   * @return num of worker groups.
+   */
+  int nserver_groups() const{return cluster_.nservers()/nservers_per_group();}
   /**
    * Return the id of the worker thread within his group.
-   */
-  int groupid() const{return global_procsid_/nprocs_per_group();}
-  int ngroups() const{return cluster_.nworkers()/nprocs_per_group();}
-  int nthreads_per_group() const{return nthreads_per_procs()*nprocs_per_group();}
   int group_threadid(int local_threadid)const{
     return group_procsid()*nthreads_per_procs()+local_threadid;
   }
-  int group_procsid()const{
-    return global_procsid_%nprocs_per_group();
-  }
-  int group_procsid(int group_threadid)const{
-    return group_threadid/nthreads_per_procs();
-  }
-
-  const string server_addr() const{
-    CHECK(AmIServer());
-    return addr_.at(global_procsid());
+   */
+  /**
+   * @return host name
+   */
+  const string host_addr() const {
+    return hosts_.at(procs_id_);
   }
   /**
-   * procsid for the server that manages param for the worker of group_procsid
+   * @return host name of a procs with the specified id
    */
-  const string server_addr(int server_procsid) const{
-    CHECK_GE(server_procsid,0);
-    CHECK_LT(server_procsid, nservers());
-    return addr_.at(nworkers()+server_procsid);
+  const string host_addr(int procs_id) const {
+    CHECK_LT(procs_id, nworkers()+nservers());
+    CHECK_GE(procs_id, 0);
+    return hosts_.at(procs_id);
   }
+  /**
+   * @return the host name of a server procs with specified server group id
+   * and procs id within that group
+   */
+  const string server_addr(int group_id, int group_procs_id) const{
+    CHECK_GE(group_procs_id,0);
+    CHECK_LT(group_procs_id, nservers_per_group());
+    CHECK_GE(group_id, 0);
+    CHECK_LT(group_id, nserver_groups());
+    return hosts_.at(nworkers()+group_id*nservers_per_group()+group_procs_id);
+  }
+  /*
   const string group_thread_addr(int group_threadid) const{
     CHECK_GE(group_threadid,0);
     CHECK_LT(group_threadid,nthreads_per_group());
@@ -81,39 +124,36 @@ class Cluster {
     return std::to_string(cluster_.start_port());
   }
 
-  /**
-   * pull port of ParameterManager
-   */
   const int router_port() const {
     return cluster_.start_port()+1;
   }
+  */
   /**
    * pull port of Bridge layers.
-   */
   const string pull_port(int k) const {
     return std::to_string(cluster_.start_port()+2+k);
   }
-  bool synchronous()const {return cluster_.synchronous();}
+   */
+  //bool synchronous()const {return cluster_.synchronous();}
   const string workspace() {return cluster_.workspace();}
-  const string visualization_folder(){
-    return cluster_.workspace()+"/"+cluster_.vis_subfolder();
+  const string vis_folder(){
+    return cluster_.workspace()+"/visualization";
   }
 
   /**
    * bandwidth MB/s
-   */
   float bandwidth() const {
     return cluster_.bandwidth();
   }
-  const string hostname() const{return hostname_;}
- private:
-  Cluster(const ClusterProto &cluster, string hostfile, int procsid) ;
+   */
 
  private:
-  int global_procsid_;
-  std::vector<std::string> addr_;
-  // hostname
-  std::string hostname_;
+  Cluster(const ClusterProto &cluster, int procs_id) ;
+  void SetupFolders(const ClusterProto &cluster);
+
+ private:
+  int procs_id_;
+  std::vector<std::string> hosts_;
   // cluster config proto
   ClusterProto cluster_;
   // make this class a singlton
@@ -121,4 +161,4 @@ class Cluster {
 };
 }  // namespace singa
 
-#endif  // INCLUDE_UTILS_GLOBAL_CONTEXT_H_
+#endif  // INCLUDE_UTILS_CLUSTER_H_

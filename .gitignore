@@ -17,6 +17,7 @@ script/*
 !script/*.py
 !script/*.sh
 !script/*.awk
+src/test/data/*
 tmp
 log*
 cscope.*

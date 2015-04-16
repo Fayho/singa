@@ -12,9 +12,9 @@
  */
 DEFINE_int32(procsID, 0, "global process ID");
 DEFINE_string(hostfile, "examples/imagenet12/hostfile", "hostfile");
-DEFINE_string(cluster_conf, "examples/imagenet12/cluster.conf",
+DEFINE_string(cluster, "examples/imagenet12/cluster.conf",
     "configuration file for the cluster");
-DEFINE_string(model_conf, "examples/imagenet12/model.conf",
+DEFINE_string(model, "examples/imagenet12/model.conf",
     "Deep learning model configuration file");
 
 DEFINE_string(topology_config,"examples/imagenet12/topology.conf", "Network of servers");
@@ -42,10 +42,10 @@ int main(int argc, char **argv) {
 
   // Init Cluster
   singa::ClusterProto pcluster;
-  singa::ReadProtoFromTextFile(FLAGS_cluster_conf.c_str(), &pcluster);
+  singa::ReadProtoFromTextFile(FLAGS_cluster.c_str(), &pcluster);
   auto cluster=singa::Cluster::Get(pcluster, FLAGS_hostfile, FLAGS_procsID);
   singa::ModelProto model;
-  singa::ReadProtoFromTextFile(FLAGS_model_conf.c_str(), &model);
+  singa::ReadProtoFromTextFile(FLAGS_model.c_str(), &model);
   LOG(INFO)<<"The cluster config is\n"<<pcluster.DebugString()
     <<"\nThe model config is\n"<<model.DebugString();
 
