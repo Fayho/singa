@@ -9,20 +9,20 @@
 
 using google::protobuf::Message;
 
-namespace shard {
+namespace singa {
 
 /**
- * Data shard stores training/validation/test records.
+ * Data shard stores training/validation/test tuples.
  * Every worker node should have a training shard (validation/test shard
  * is optional). The shard file for training is
- * singa::Cluster::data_folder()/train/shard.dat; The shard file for validation
- * is lapis::Cluster::data_folder()/train/shard.dat; Similar path for test.
+ * singa::Cluster::workspace()/train/shard.dat; The shard file for validation
+ * is singa::Cluster::workspace()/train/shard.dat; Similar path for test.
  *
- * shard.dat consists of a set of unordered records/tuples. The tuple is
- * encoded as [key_len key tuple_len tuple] (key_len and tuple_len are of type
- * uint32, which indicate the bytes of key and tuple respectively.
+ * shard.dat consists of a set of unordered tuples. Each tuple is
+ * encoded as [key_len key record_len val] (key_len and record_len are of type
+ * uint32, which indicate the bytes of key and record respectively.
  *
- * When Shard obj is created, it will remove the last key if the tuple size and
+ * When Shard obj is created, it will remove the last key if the record size and
  * key size do not match because the last write of tuple crashed.
  *
  * TODO
@@ -32,19 +32,19 @@ namespace shard {
  */
 class Shard {
  public:
-  //!< read only mode used in training
   enum {
+    //!< read only mode used in training
     kRead=0,
-  //!< write mode used in creating shard (will overwrite previous one)
-   kCreate=1,
-  //!< append mode, e.g. used when previous creating crashes
-   kAppend=2
+    //!< write mode used in creating shard (will overwrite previous one)
+    kCreate=1,
+    //!< append mode, e.g. used when previous creating crashes
+    kAppend=2
   };
 
  public:
   /**
    * Init the shard obj.
-   * @folder shard folder (path except shard.dat) on worker node
+   * @folder shard folder (path excluding shard.dat) on worker node
    * @mode shard open mode, Shard::kRead, Shard::kWrite or Shard::kAppend
    * @bufsize batch bufsize bytes data for every disk op (read or write),
    * default is 100MB
@@ -54,8 +54,8 @@ class Shard {
 
   /**
    * read next tuple from the shard.
-   * @key key tuple key
-   * @param val tuple value of type Message
+   * @key key
+   * @param val record of type Message
    * @return true if read success otherwise false, e.g., the tuple was not
    * inserted completely.
    */
@@ -63,7 +63,7 @@ class Shard {
   /**
    * read next tuple from the shard.
    * @key key tuple key
-   * @param val tuple value of type string
+   * @param val record of type string
    * @return true if read success otherwise false, e.g., the tuple was not
    * inserted completely.
    */
@@ -71,14 +71,14 @@ class Shard {
 
   /**
    * Append one tuple to the shard.
-   * @param key tuple string, e.g., image path
+   * @param key e.g., image path
    * @param val
    * @return reture if sucess, otherwise false, e.g., inserted before
    */
   bool Insert(const std::string& key, const Message& tuple);
   /**
    * Append one tuple to the shard.
-   * @param key tuple string, e.g., image path
+   * @param key e.g., image path
    * @param val
    * @return reture if sucess, otherwise false, e.g., inserted before
    */
@@ -94,6 +94,7 @@ class Shard {
    */
   void Flush() ;
   /**
+   * Iterate through all tuples to get the num of all tuples.
    * @return num of tuples
    */
   const int Count();
@@ -115,7 +116,7 @@ class Shard {
    * Setup the disk pointer to the right position for append in case that
    * the pervious write crashes.
    * @param path shard path.
-   * @return offset (end pos) of the last success written tuple.
+   * @return offset (end pos) of the last success written record.
    */
   int PrepareForAppend(std::string path);
   /**
@@ -129,7 +130,7 @@ class Shard {
   std::string path_;
   // either ifstream or ofstream
   std::fstream fdat_;
-  // to avoid replicated tuples
+  // to avoid replicated record
   std::unordered_set<std::string> keys_;
   // internal buffer
   char* buf_;
@@ -140,5 +141,5 @@ class Shard {
   // bytes in buf_, used in reading
   int bufsize_;
 };
-} /* shard */
-#endif  // DATASOURCE_SHARD_H_
+} /* singa */
+#endif  // INCLUDE_UTILS_SHARD_H_

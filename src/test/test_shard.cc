@@ -1,16 +1,15 @@
-// Copyright © 2014 Wei Wang. All Rights Reserved.
-// 2014-11-19 19:27
-
 #include <gtest/gtest.h>
 #include <sys/stat.h>
 
-#include "datasource/shard.h"
+#include "utils/shard.h"
 
 std::string key[]={"firstkey","secondkey","3key", "key4", "key5"};
 std::string tuple[]={"firsttuple","2th-tuple","thridtuple", "tuple4", "tuple5"};
 
+using namespace singa;
+
 TEST(ShardTest, CreateShard){
-  std::string path="/tmp/shard_test";
+  std::string path="src/test/data/shard_test";
   mkdir(path.c_str(), 0755);
   Shard shard(path, Shard::kCreate, 50);
   shard.Insert(key[0], tuple[0]);
@@ -20,21 +19,21 @@ TEST(ShardTest, CreateShard){
 }
 
 TEST(ShardTest, AppendShard){
-  std::string path="/tmp/shard_test";
+  std::string path="src/test/data/shard_test";
   Shard shard(path, Shard::kAppend, 50);
   shard.Insert(key[3], tuple[3]);
   shard.Insert(key[4], tuple[4]);
   shard.Flush();
 }
 TEST(ShardTest, CountShard){
-  std::string path="/tmp/shard_test";
+  std::string path="src/test/data/shard_test";
   Shard shard(path, Shard::kRead, 50);
   int count=shard.Count();
   ASSERT_EQ(5, count);
 }
 
 TEST(ShardTest, ReadShard){
-  std::string path="/tmp/shard_test";
+  std::string path="src/test/data/shard_test";
   Shard shard(path, Shard::kRead, 50);
   std::string k, t;
   ASSERT_TRUE(shard.Next(&k, &t));

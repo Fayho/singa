@@ -1,13 +1,11 @@
-// Copyright © 2014 Wei Wang. All Rights Reserved.
-// 2014-07-22 15:34
-
 #include <gtest/gtest.h>
 #include <glog/logging.h>
 #include "proto/model.pb.h"
 
-#include "model/param.h"
+#include "utils/param.h"
 
-namespace lapis {
+using namespace singa;
+
 class ParamTest : public ::testing::Test {
  public:
   ParamTest() {
@@ -138,6 +136,3 @@ TEST_F(ParamTest, GaussianSqrtFanInInit) {
   LOG(INFO) << val[8] << " " << val[9] << " " << val[10] << " " << val[11];
   */
 }
-}  // namespace lapis
-
-

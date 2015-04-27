@@ -2,7 +2,7 @@
 #include <glog/logging.h>
 
 #include "utils/shard.h"
-namespace shard {
+namespace singa {
 
 Shard::Shard(std::string folder, char mode, int capacity){
   struct stat sb;
@@ -204,4 +204,4 @@ int Shard::PrepareForAppend(std::string path){
   fin.close();
   return last_tuple_offset;
 }
-} /* shard */
+} /* singa */

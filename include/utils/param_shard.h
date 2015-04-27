@@ -13,10 +13,12 @@
 using std::map;
 
 /**
- * A shard (collection) of Param objects, to be shared between different thread (PMServer and PMClient).
+ * A shard (collection) of Param objects, to be shared between different thread
+ * (PMServer and PMClient).
  * These are local objects.
  *
- * The main thread creates this object, and it deletes it when all other threads finish.
+ * The main thread creates this object, and it deletes it when all other
+ * threads finish.
  *
  * Note we don't do consistency here, but defer it to the Param object.
  */

@@ -1,5 +1,5 @@
-#ifndef INCLUDE_MODEL_PARAM_H_
-#define INCLUDE_MODEL_PARAM_H_
+#ifndef INCLUDE_UTILS_PARAM_H_
+#define INCLUDE_UTILS_PARAM_H_
 #include <vector>
 #include <string>
 #include <map>
@@ -202,4 +202,4 @@ class ElasticParam: public Param{
 
 }  // namespace singa
 
-#endif  // INCLUDE_MODEL_PARAM_H_
+#endif  // INCLUDE_UTILS_PARAM_H_
