@@ -17,19 +17,14 @@ class Socket{
     * Send a message to connected socket(s), non-blocking. The message will
     * be deallocated after sending, thus should not be used after calling Send();
     * @param  the message to be sent
-    * @param  dst the identifier of the connected socket. By default, it is
-    * -1, which means sending this message to all connected sockets.
     * @return 1 for success queuing the message for sending, 0 for failure
     */
-  virtual int Send(Msg* msg, int dst=-1)=0;
+  virtual int Send(Msg* msg)=0;
   /**
-    * Receive a message
-    * @param src the identifier of the connected socket from which to receive
-    * message. By default it is -1, which means receiving from any connected
-    * socket.
+    * Receive a message from any connected socket.
     * @return a message pointer if success; nullptr if failure
     */
-  virtual Msg* Receive(int src=-1)=0;
+  virtual Msg* Receive()=0;
   /**
    * @return Identifier of the implementation dependent socket. E.g., zsock_t*
    * for ZeroMQ implementation and rank for MPI implementation.
@@ -55,8 +50,8 @@ class Poller{
 class Dealer : public Socket{
   public:
   /**
-    * Blocking operation to setup the connection with the router, called
-    * only once.
+    * Setup the connection with the router.
+    *
     * @param endpoint identifier of the router. For intra-process
     * connection, the endpoint follows the format of ZeroMQ, i.e.,
     * starting with "inproc://"; in Singa, since each process has one
@@ -66,19 +61,24 @@ class Dealer : public Socket{
     * @return 1 connection sets up successfully; 0 otherwise
     */
   virtual int Connect(string endpoint)=0;
-  /**
-    * Since the Dealer socket connects to only one router, it must send to
-    * the connected router, thus the dst argument is useless.
-    */
-  virtual int Send(Msg* msg, int dst=-1)=0;
-  virtual Msg* Receive(int src=-1)=0;
+  virtual int Send(Msg* msg)=0;
+  virtual Msg* Receive()=0;
   virtual void* InternalID() const=0;
 };
 
 class Router : public Socket{
  public:
   /**
-  * Blocking operation to setup the connection with dealers.
+   * Constructor.
+   *
+   * @param bufsize buffer at most this number of messages
+   */
+  Router(int bufsize=100){
+    bufsize_=bufsize;
+  }
+  /**
+  * Setup the connection with dealers.
+  *
   * It automatically binds to the endpoint for intra-process communication,
   * i.e., "inproc://router".
   *
@@ -86,15 +86,14 @@ class Router : public Socket{
   * to connect. It has the format IP:Port, where IP is the host machine.
   * If endpoint is empty, it means that all connections are
   * intra-process connection.
-  * @param expected_connections total number of connections. This function
-  * exits after receiving this number of connections from dealers or after
-  * a timeout (1 minutes).
   * @return number of connected dealers.
   */
-  virtual int Bind(string endpoint, int expected_connections)=0;
-  virtual int Send(Msg* msg, int dst=-1)=0;
-  virtual Msg* Receive(int src=-1)=0;
+  virtual int Bind(string endpoint)=0;
+  virtual int Send(Msg* msg)=0;
+  virtual Msg* Receive()=0;
   virtual void* InternalID() const=0;
+ protected:
+  int bufsize_;
 };
 
 class ZMQPoller: public Poller{
@@ -111,8 +110,8 @@ class ZMQDealer: public Dealer{
  public:
   virtual~ ZMQDealer();
   virtual int Connect(string endpoint);
-  virtual int Send(Msg* msg, int dst=-1);
-  virtual Msg* Receive(int src=-1);
+  virtual int Send(Msg* msg);
+  virtual Msg* Receive();
   virtual void* InternalID() const{
     return dealer_;
   }
@@ -123,9 +122,12 @@ class ZMQDealer: public Dealer{
 class ZMQRouter: public Router{
  public:
   virtual~ ZMQRouter();
-  virtual int Bind(string endpoint, int expected_connections);
-  virtual int Send(Msg* msg, int dst=-1);
-  virtual Msg* Receive(int src=-1);
+  virtual int Bind(string endpoint);
+  /**
+   * If the destination socket has not connected yet, buffer this the message.
+   */
+  virtual int Send(Msg* msg);
+  virtual Msg* Receive();
   virtual void* InternalID() const{
     return router_;
   }
@@ -133,6 +135,7 @@ class ZMQRouter: public Router{
   zsock_t* router_;
   std::map<int, zframe_t*> id2addr_;
   std::map<int, std::vector<zmsg_t*>> bufmsg_;
+  int nBufmsg_;
 };
 
 } /* singa */

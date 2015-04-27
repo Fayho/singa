@@ -21,24 +21,15 @@ Socket* ZMQPoller::Poll(int timeout){
 int ZMQDealer::Connect(string endpoint){
   dealer_=zsock_new_dealer(endpoint.c_str());
   CHECK_NOTNULL(dealer_);
-  /*
-  zmsg_t* msg=zmsg_new();
-  zmsg_pushstr(msg, "PING");
-  zmsg_send(&msg, dealer_);
-  msg=zmsg_recv(dealer_);
-  char *tmp=zmsg_popstr(msg);
-  CHECK_STREQ(tmp, "PONG");
-  zmsg_destroy(&msg);
-  */
   return 1;
 }
-int ZMQDealer::Send(Msg *msg, int dst){
+int ZMQDealer::Send(Msg *msg){
   zmsg_t* zmsg=(static_cast<ZMQMsg*>(msg))->DumpToZmsg();
   zmsg_send(&zmsg, dealer_);
   return 1;
 }
 
-Msg* ZMQDealer::Receive(int src){
+Msg* ZMQDealer::Receive(){
   zmsg_t* zmsg=zmsg_recv(dealer_);
   ZMQMsg* msg=new ZMQMsg();
   msg->ParseFromZmsg(zmsg);
@@ -47,7 +38,7 @@ Msg* ZMQDealer::Receive(int src){
 ZMQDealer::~ZMQDealer(){
   zsock_destroy(&dealer_);
 }
-int ZMQRouter::Bind(string endpoint, int expected_connections){
+int ZMQRouter::Bind(string endpoint){
   router_=zsock_new_router("inproc://router");
   CHECK_NOTNULL(router_);
   if(endpoint.length())
@@ -55,7 +46,7 @@ int ZMQRouter::Bind(string endpoint, int expected_connections){
   return 1;
 }
 
-int ZMQRouter::Send(Msg *msg, int dst){
+int ZMQRouter::Send(Msg *msg){
   zmsg_t* zmsg=static_cast<ZMQMsg*>(msg)->DumpToZmsg();
   int dstid=static_cast<ZMQMsg*>(msg)->dst();
   if(id2addr_.find(dstid)!=id2addr_.end()){
@@ -63,12 +54,16 @@ int ZMQRouter::Send(Msg *msg, int dst){
     zmsg_prepend(zmsg, &addr);
     zmsg_send(&zmsg, router_);
   }else{
+    if(bufmsg_.size()==0)
+      nBufmsg_=0;
     bufmsg_[dstid].push_back(zmsg);
+    nBufmsg_++;
+    CHECK_LE(nBufmsg_, bufsize_);
   }
   return 1;
 }
 
-Msg* ZMQRouter::Receive(int src){
+Msg* ZMQRouter::Receive(){
   zmsg_t* zmsg=zmsg_recv(router_);
   zframe_t* dealer=zmsg_pop(zmsg);
   ZMQMsg* msg=new ZMQMsg();

@@ -85,7 +85,7 @@ TEST(CommunicationTest, DealerRouterPingPong){
   for(int i=0;i<n;i++)
     threads.push_back(std::thread(DealerPingPong, i));
   ZMQRouter* router=new ZMQRouter();
-  router->Bind("", n);
+  router->Bind("");
   for(int k=0;k<n;k++){
     Msg* msg=router->Receive();
     ASSERT_EQ(0, msg->src_group_id());
@@ -112,7 +112,7 @@ TEST(CommunicationTest, nWorkers1Server){
     threads.push_back(std::thread(WorkerDealer, i, 0));
   //threads.push_back(std::thread(ServerDealer, 0, 4));
   ZMQRouter* router=new ZMQRouter();
-  router->Bind("", 0);
+  router->Bind("");
   int nmsg=4*nworker;
   int k=0;
   while(nmsg>0){
@@ -140,10 +140,10 @@ TEST(CommunicationTest, 2Workers2Server){
   threads.push_back(std::thread(ServerDealer, 0, 2));
   threads.push_back(std::thread(ServerDealer, 1, 2));
   ZMQRouter* router=new ZMQRouter();
-  router->Bind("", 0);
+  router->Bind("");
   int n=8;
   while(n>0){
-    Msg* msg=router->Receive(n);
+    Msg* msg=router->Receive();
     if(2== msg->dst_flag()){
       ASSERT_STREQ(ping, (char*)msg->frame_data());
     }else{
