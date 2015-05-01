@@ -6,12 +6,12 @@
 
 using std::string;
 namespace singa {
-class Msg{
+class BaseMsg{
   public:
   /**
     * Destructor to free memory
     */
-  virtual ~Msg(){};
+  virtual ~BaseMsg(){};
   /**
     * @param group_id worker/server group id
     * @param id worker/server id within the group
@@ -19,16 +19,23 @@ class Msg{
     */
   virtual void set_src(int group_id, int id, int flag)=0;
   virtual void set_dst(int group_id, int id, int flag)=0;
+  virtual void set_src(int procs_id, int flag)=0;
+  virtual void set_dst(int procs_id, int flag)=0;
   virtual int src_group_id() const=0;
-  virtual int src_id() const=0;
   virtual int dst_group_id() const=0;
+  virtual int src_id() const=0;
   virtual int dst_id() const=0;
+  virtual int src_procs_id() const=0;
+  virtual int dst_procs_id() const=0;
   virtual int src_flag() const=0;
   virtual int dst_flag() const=0;
   virtual void set_type(int type)=0;
   virtual int type() const=0;
   virtual void set_target(int target)=0;
   virtual int target() const=0;
+
+  virtual BaseMsg* CopyHeader()=0;
+  virtual void SetHeader(BaseMsg* msg)=0;
 
   virtual void add_frame(const void*, int nBytes)=0;
   virtual int frame_size()=0;
@@ -39,14 +46,14 @@ class Msg{
     */
   virtual bool next_frame()=0;
 };
-
-
-class ZMQMsg : public Msg{
+#define USE_
+#ifdef USE_
+class Msg : public BaseMsg{
  public:
-  ZMQMsg() {
+  Msg() {
     msg_=zmsg_new();
   }
-  virtual ~ZMQMsg(){
+  virtual ~Msg(){
     if(msg_!=NULL)
       zmsg_destroy(&msg_);
   }
@@ -56,9 +63,11 @@ class ZMQMsg : public Msg{
   virtual void set_dst(int group_id, int id, int flag){
     dst_=(group_id<<kOff1)|(id<<kOff2)|flag;
   }
-  virtual int src_group_id() const {
-    int ret=src_>>kOff1;
-    return ret;
+  virtual void set_src(int procs_id, int flag){
+    set_src(procs_id, 0, flag);
+  }
+  virtual void set_dst(int procs_id, int flag){
+    set_dst(procs_id, 0, flag);
   }
   int src() const {
     return src_;
@@ -66,12 +75,17 @@ class ZMQMsg : public Msg{
   int dst() const {
     return dst_;
   }
-  virtual int src_id() const{
-    int ret=(src_&kMask1)>>kOff2;
+  virtual int src_group_id() const {
+    int ret=src_>>kOff1;
     return ret;
   }
+
   virtual int dst_group_id() const{
     int ret=dst_>>kOff1;
+    return ret;
+  }
+  virtual int src_id() const{
+    int ret=(src_&kMask1)>>kOff2;
     return ret;
   }
   virtual int dst_id() const{
@@ -86,6 +100,17 @@ class ZMQMsg : public Msg{
     int ret=dst_&kMask2;
     return ret;
   }
+  virtual int src_procs_id() const {
+    return src_group_id();
+  }
+  virtual int dst_procs_id() const {
+    return dst_group_id();
+  }
+
+  void swap_addr(){
+    std::swap(src_,dst_);
+  }
+
   virtual void set_type(int type){
     target_=(type<<kOff3)|(target_&kMask3);
   }
@@ -100,6 +125,19 @@ class ZMQMsg : public Msg{
     int ret=target_&kMask3;
     return ret;
   }
+
+  virtual BaseMsg* CopyHeader(){
+    Msg* msg=new Msg();
+    msg->src_=src_;
+    msg->dst_=dst_;
+    return msg;
+  }
+
+  virtual void SetHeader(BaseMsg* msg){
+    src_=(static_cast<Msg*>(msg))->src_;
+    dst_=(static_cast<Msg*>(msg))->dst_;
+  }
+
   virtual void add_frame(const void* addr, int nBytes){
     zmsg_addmem(msg_, addr, nBytes);
   }
@@ -140,6 +178,7 @@ class ZMQMsg : public Msg{
   zmsg_t* msg_;
   zframe_t *frame_;
 };
+#endif
 
 } /* singa */
 

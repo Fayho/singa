@@ -158,28 +158,6 @@ inline bool Record_Type_Parse(
   return ::google::protobuf::internal::ParseNamedEnum<Record_Type>(
     Record_Type_descriptor(), name, value);
 }
-enum UpdaterProto_Type {
-  UpdaterProto_Type_kAdaGrad = 1,
-  UpdaterProto_Type_kAdaDelta = 2,
-  UpdaterProto_Type_kNesterov = 3,
-  UpdaterProto_Type_kSGD = 4,
-  UpdaterProto_Type_kRMSProp = 5
-};
-bool UpdaterProto_Type_IsValid(int value);
-const UpdaterProto_Type UpdaterProto_Type_Type_MIN = UpdaterProto_Type_kAdaGrad;
-const UpdaterProto_Type UpdaterProto_Type_Type_MAX = UpdaterProto_Type_kRMSProp;
-const int UpdaterProto_Type_Type_ARRAYSIZE = UpdaterProto_Type_Type_MAX + 1;
-
-const ::google::protobuf::EnumDescriptor* UpdaterProto_Type_descriptor();
-inline const ::std::string& UpdaterProto_Type_Name(UpdaterProto_Type value) {
-  return ::google::protobuf::internal::NameOfEnum(
-    UpdaterProto_Type_descriptor(), value);
-}
-inline bool UpdaterProto_Type_Parse(
-    const ::std::string& name, UpdaterProto_Type* value) {
-  return ::google::protobuf::internal::ParseNamedEnum<UpdaterProto_Type>(
-    UpdaterProto_Type_descriptor(), name, value);
-}
 enum UpdaterProto_ChangeProto {
   UpdaterProto_ChangeProto_kFixed = 0,
   UpdaterProto_ChangeProto_kInverse_t = 1,
@@ -204,6 +182,55 @@ inline bool UpdaterProto_ChangeProto_Parse(
   return ::google::protobuf::internal::ParseNamedEnum<UpdaterProto_ChangeProto>(
     UpdaterProto_ChangeProto_descriptor(), name, value);
 }
+enum MsgType {
+  kGet = 0,
+  kPut = 1,
+  kSync = 2,
+  kUpdate = 3,
+  kSyncRequest = 4,
+  kSyncResponse = 5,
+  kStop = 6,
+  kData = 7,
+  kRGet = 8,
+  kRUpdate = 9,
+  kConnect = 10
+};
+bool MsgType_IsValid(int value);
+const MsgType MsgType_MIN = kGet;
+const MsgType MsgType_MAX = kConnect;
+const int MsgType_ARRAYSIZE = MsgType_MAX + 1;
+
+const ::google::protobuf::EnumDescriptor* MsgType_descriptor();
+inline const ::std::string& MsgType_Name(MsgType value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    MsgType_descriptor(), value);
+}
+inline bool MsgType_Parse(
+    const ::std::string& name, MsgType* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<MsgType>(
+    MsgType_descriptor(), name, value);
+}
+enum EntityType {
+  kWorkerParam = 0,
+  kWorkerLayer = 1,
+  kServer = 2,
+  kStub = 3
+};
+bool EntityType_IsValid(int value);
+const EntityType EntityType_MIN = kWorkerParam;
+const EntityType EntityType_MAX = kStub;
+const int EntityType_ARRAYSIZE = EntityType_MAX + 1;
+
+const ::google::protobuf::EnumDescriptor* EntityType_descriptor();
+inline const ::std::string& EntityType_Name(EntityType value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    EntityType_descriptor(), value);
+}
+inline bool EntityType_Parse(
+    const ::std::string& name, EntityType* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<EntityType>(
+    EntityType_descriptor(), name, value);
+}
 enum Phase {
   kTrain = 0,
   kValidation = 1,
@@ -223,6 +250,25 @@ inline bool Phase_Parse(
     const ::std::string& name, Phase* value) {
   return ::google::protobuf::internal::ParseNamedEnum<Phase>(
     Phase_descriptor(), name, value);
+}
+enum ShareOption {
+  kValueOnly = 0,
+  kWhole = 1
+};
+bool ShareOption_IsValid(int value);
+const ShareOption ShareOption_MIN = kValueOnly;
+const ShareOption ShareOption_MAX = kWhole;
+const int ShareOption_ARRAYSIZE = ShareOption_MAX + 1;
+
+const ::google::protobuf::EnumDescriptor* ShareOption_descriptor();
+inline const ::std::string& ShareOption_Name(ShareOption value) {
+  return ::google::protobuf::internal::NameOfEnum(
+    ShareOption_descriptor(), value);
+}
+inline bool ShareOption_Parse(
+    const ::std::string& name, ShareOption* value) {
+  return ::google::protobuf::internal::ParseNamedEnum<ShareOption>(
+    ShareOption_descriptor(), name, value);
 }
 enum PartitionType {
   kDataPartition = 0,
@@ -821,6 +867,13 @@ class ParamProto : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 partition_dim() const;
   inline void set_partition_dim(::google::protobuf::int32 value);
 
+  // optional int32 version = 6;
+  inline bool has_version() const;
+  inline void clear_version();
+  static const int kVersionFieldNumber = 6;
+  inline ::google::protobuf::int32 version() const;
+  inline void set_version(::google::protobuf::int32 value);
+
   // optional .singa.ParamProto.InitMethod init_method = 7 [default = kConstant];
   inline bool has_init_method() const;
   inline void clear_init_method();
@@ -887,6 +940,8 @@ class ParamProto : public ::google::protobuf::Message {
   inline void clear_has_split_threshold();
   inline void set_has_partition_dim();
   inline void clear_has_partition_dim();
+  inline void set_has_version();
+  inline void clear_has_version();
   inline void set_has_init_method();
   inline void clear_has_init_method();
   inline void set_has_value();
@@ -911,6 +966,7 @@ class ParamProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 id_;
   ::google::protobuf::int32 split_threshold_;
   ::google::protobuf::int32 partition_dim_;
+  ::google::protobuf::int32 version_;
   int init_method_;
   float value_;
   float low_;
@@ -921,7 +977,7 @@ class ParamProto : public ::google::protobuf::Message {
   float weight_decay_multiplier_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(13 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(14 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -3375,33 +3431,6 @@ class UpdaterProto : public ::google::protobuf::Message {
 
   // nested types ----------------------------------------------------
 
-  typedef UpdaterProto_Type Type;
-  static const Type kAdaGrad = UpdaterProto_Type_kAdaGrad;
-  static const Type kAdaDelta = UpdaterProto_Type_kAdaDelta;
-  static const Type kNesterov = UpdaterProto_Type_kNesterov;
-  static const Type kSGD = UpdaterProto_Type_kSGD;
-  static const Type kRMSProp = UpdaterProto_Type_kRMSProp;
-  static inline bool Type_IsValid(int value) {
-    return UpdaterProto_Type_IsValid(value);
-  }
-  static const Type Type_MIN =
-    UpdaterProto_Type_Type_MIN;
-  static const Type Type_MAX =
-    UpdaterProto_Type_Type_MAX;
-  static const int Type_ARRAYSIZE =
-    UpdaterProto_Type_Type_ARRAYSIZE;
-  static inline const ::google::protobuf::EnumDescriptor*
-  Type_descriptor() {
-    return UpdaterProto_Type_descriptor();
-  }
-  static inline const ::std::string& Type_Name(Type value) {
-    return UpdaterProto_Type_Name(value);
-  }
-  static inline bool Type_Parse(const ::std::string& name,
-      Type* value) {
-    return UpdaterProto_Type_Parse(name, value);
-  }
-
   typedef UpdaterProto_ChangeProto ChangeProto;
   static const ChangeProto kFixed = UpdaterProto_ChangeProto_kFixed;
   static const ChangeProto kInverse_t = UpdaterProto_ChangeProto_kInverse_t;
@@ -3432,13 +3461,6 @@ class UpdaterProto : public ::google::protobuf::Message {
   }
 
   // accessors -------------------------------------------------------
-
-  // optional .singa.UpdaterProto.Type type = 1 [default = kAdaGrad];
-  inline bool has_type() const;
-  inline void clear_type();
-  static const int kTypeFieldNumber = 1;
-  inline ::singa::UpdaterProto_Type type() const;
-  inline void set_type(::singa::UpdaterProto_Type value);
 
   // optional bool hogwild = 2 [default = true];
   inline bool has_hogwild() const;
@@ -3576,8 +3598,6 @@ class UpdaterProto : public ::google::protobuf::Message {
 
   // @@protoc_insertion_point(class_scope:singa.UpdaterProto)
  private:
-  inline void set_has_type();
-  inline void clear_has_type();
   inline void set_has_hogwild();
   inline void clear_has_hogwild();
   inline void set_has_momentum();
@@ -3611,7 +3631,6 @@ class UpdaterProto : public ::google::protobuf::Message {
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
-  int type_;
   bool hogwild_;
   float momentum_;
   float weight_decay_;
@@ -3625,14 +3644,14 @@ class UpdaterProto : public ::google::protobuf::Message {
   int learning_rate_change_method_;
   ::google::protobuf::int32 sync_frequency_;
   ::google::protobuf::int32 warmup_steps_;
+  float moving_rate_;
   ::std::string* param_type_;
   static ::std::string* _default_param_type_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > step_;
   ::google::protobuf::RepeatedField< float > step_lr_;
-  float moving_rate_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(18 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(17 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -4692,15 +4711,37 @@ inline void ParamProto::set_partition_dim(::google::protobuf::int32 value) {
   partition_dim_ = value;
 }
 
-// optional .singa.ParamProto.InitMethod init_method = 7 [default = kConstant];
-inline bool ParamProto::has_init_method() const {
+// optional int32 version = 6;
+inline bool ParamProto::has_version() const {
   return (_has_bits_[0] & 0x00000020u) != 0;
 }
-inline void ParamProto::set_has_init_method() {
+inline void ParamProto::set_has_version() {
   _has_bits_[0] |= 0x00000020u;
 }
-inline void ParamProto::clear_has_init_method() {
+inline void ParamProto::clear_has_version() {
   _has_bits_[0] &= ~0x00000020u;
+}
+inline void ParamProto::clear_version() {
+  version_ = 0;
+  clear_has_version();
+}
+inline ::google::protobuf::int32 ParamProto::version() const {
+  return version_;
+}
+inline void ParamProto::set_version(::google::protobuf::int32 value) {
+  set_has_version();
+  version_ = value;
+}
+
+// optional .singa.ParamProto.InitMethod init_method = 7 [default = kConstant];
+inline bool ParamProto::has_init_method() const {
+  return (_has_bits_[0] & 0x00000040u) != 0;
+}
+inline void ParamProto::set_has_init_method() {
+  _has_bits_[0] |= 0x00000040u;
+}
+inline void ParamProto::clear_has_init_method() {
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void ParamProto::clear_init_method() {
   init_method_ = 0;
@@ -4717,13 +4758,13 @@ inline void ParamProto::set_init_method(::singa::ParamProto_InitMethod value) {
 
 // optional float value = 8 [default = 1];
 inline bool ParamProto::has_value() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void ParamProto::set_has_value() {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void ParamProto::clear_has_value() {
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void ParamProto::clear_value() {
   value_ = 1;
@@ -4739,13 +4780,13 @@ inline void ParamProto::set_value(float value) {
 
 // optional float low = 9 [default = -1];
 inline bool ParamProto::has_low() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
+  return (_has_bits_[0] & 0x00000100u) != 0;
 }
 inline void ParamProto::set_has_low() {
-  _has_bits_[0] |= 0x00000080u;
+  _has_bits_[0] |= 0x00000100u;
 }
 inline void ParamProto::clear_has_low() {
-  _has_bits_[0] &= ~0x00000080u;
+  _has_bits_[0] &= ~0x00000100u;
 }
 inline void ParamProto::clear_low() {
   low_ = -1;
@@ -4761,13 +4802,13 @@ inline void ParamProto::set_low(float value) {
 
 // optional float high = 10 [default = 1];
 inline bool ParamProto::has_high() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
+  return (_has_bits_[0] & 0x00000200u) != 0;
 }
 inline void ParamProto::set_has_high() {
-  _has_bits_[0] |= 0x00000100u;
+  _has_bits_[0] |= 0x00000200u;
 }
 inline void ParamProto::clear_has_high() {
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline void ParamProto::clear_high() {
   high_ = 1;
@@ -4783,13 +4824,13 @@ inline void ParamProto::set_high(float value) {
 
 // optional float mean = 11 [default = 0];
 inline bool ParamProto::has_mean() const {
-  return (_has_bits_[0] & 0x00000200u) != 0;
+  return (_has_bits_[0] & 0x00000400u) != 0;
 }
 inline void ParamProto::set_has_mean() {
-  _has_bits_[0] |= 0x00000200u;
+  _has_bits_[0] |= 0x00000400u;
 }
 inline void ParamProto::clear_has_mean() {
-  _has_bits_[0] &= ~0x00000200u;
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline void ParamProto::clear_mean() {
   mean_ = 0;
@@ -4805,13 +4846,13 @@ inline void ParamProto::set_mean(float value) {
 
 // optional float std = 12 [default = 1];
 inline bool ParamProto::has_std() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
+  return (_has_bits_[0] & 0x00000800u) != 0;
 }
 inline void ParamProto::set_has_std() {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000800u;
 }
 inline void ParamProto::clear_has_std() {
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline void ParamProto::clear_std() {
   std_ = 1;
@@ -4827,13 +4868,13 @@ inline void ParamProto::set_std(float value) {
 
 // optional float learning_rate_multiplier = 13 [default = 1];
 inline bool ParamProto::has_learning_rate_multiplier() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void ParamProto::set_has_learning_rate_multiplier() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void ParamProto::clear_has_learning_rate_multiplier() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void ParamProto::clear_learning_rate_multiplier() {
   learning_rate_multiplier_ = 1;
@@ -4849,13 +4890,13 @@ inline void ParamProto::set_learning_rate_multiplier(float value) {
 
 // optional float weight_decay_multiplier = 14 [default = 1];
 inline bool ParamProto::has_weight_decay_multiplier() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00002000u) != 0;
 }
 inline void ParamProto::set_has_weight_decay_multiplier() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00002000u;
 }
 inline void ParamProto::clear_has_weight_decay_multiplier() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline void ParamProto::clear_weight_decay_multiplier() {
   weight_decay_multiplier_ = 1;
@@ -7488,38 +7529,15 @@ SingleLabelImageRecord::mutable_data() {
 
 // UpdaterProto
 
-// optional .singa.UpdaterProto.Type type = 1 [default = kAdaGrad];
-inline bool UpdaterProto::has_type() const {
-  return (_has_bits_[0] & 0x00000001u) != 0;
-}
-inline void UpdaterProto::set_has_type() {
-  _has_bits_[0] |= 0x00000001u;
-}
-inline void UpdaterProto::clear_has_type() {
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline void UpdaterProto::clear_type() {
-  type_ = 1;
-  clear_has_type();
-}
-inline ::singa::UpdaterProto_Type UpdaterProto::type() const {
-  return static_cast< ::singa::UpdaterProto_Type >(type_);
-}
-inline void UpdaterProto::set_type(::singa::UpdaterProto_Type value) {
-  assert(::singa::UpdaterProto_Type_IsValid(value));
-  set_has_type();
-  type_ = value;
-}
-
 // optional bool hogwild = 2 [default = true];
 inline bool UpdaterProto::has_hogwild() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
+  return (_has_bits_[0] & 0x00000001u) != 0;
 }
 inline void UpdaterProto::set_has_hogwild() {
-  _has_bits_[0] |= 0x00000002u;
+  _has_bits_[0] |= 0x00000001u;
 }
 inline void UpdaterProto::clear_has_hogwild() {
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000001u;
 }
 inline void UpdaterProto::clear_hogwild() {
   hogwild_ = true;
@@ -7535,13 +7553,13 @@ inline void UpdaterProto::set_hogwild(bool value) {
 
 // optional float momentum = 4 [default = 0];
 inline bool UpdaterProto::has_momentum() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000002u) != 0;
 }
 inline void UpdaterProto::set_has_momentum() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000002u;
 }
 inline void UpdaterProto::clear_has_momentum() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000002u;
 }
 inline void UpdaterProto::clear_momentum() {
   momentum_ = 0;
@@ -7557,13 +7575,13 @@ inline void UpdaterProto::set_momentum(float value) {
 
 // optional float weight_decay = 5 [default = 0];
 inline bool UpdaterProto::has_weight_decay() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000004u) != 0;
 }
 inline void UpdaterProto::set_has_weight_decay() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000004u;
 }
 inline void UpdaterProto::clear_has_weight_decay() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline void UpdaterProto::clear_weight_decay() {
   weight_decay_ = 0;
@@ -7579,13 +7597,13 @@ inline void UpdaterProto::set_weight_decay(float value) {
 
 // optional float gamma = 6 [default = 1];
 inline bool UpdaterProto::has_gamma() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void UpdaterProto::set_has_gamma() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void UpdaterProto::clear_has_gamma() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void UpdaterProto::clear_gamma() {
   gamma_ = 1;
@@ -7601,13 +7619,13 @@ inline void UpdaterProto::set_gamma(float value) {
 
 // optional float pow = 7 [default = 0];
 inline bool UpdaterProto::has_pow() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void UpdaterProto::set_has_pow() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void UpdaterProto::clear_has_pow() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void UpdaterProto::clear_pow() {
   pow_ = 0;
@@ -7623,13 +7641,13 @@ inline void UpdaterProto::set_pow(float value) {
 
 // optional float delta = 8 [default = 1e-07];
 inline bool UpdaterProto::has_delta() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 inline void UpdaterProto::set_has_delta() {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000020u;
 }
 inline void UpdaterProto::clear_has_delta() {
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 inline void UpdaterProto::clear_delta() {
   delta_ = 1e-07f;
@@ -7645,13 +7663,13 @@ inline void UpdaterProto::set_delta(float value) {
 
 // optional float rho = 9 [default = 0.9];
 inline bool UpdaterProto::has_rho() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
+  return (_has_bits_[0] & 0x00000040u) != 0;
 }
 inline void UpdaterProto::set_has_rho() {
-  _has_bits_[0] |= 0x00000080u;
+  _has_bits_[0] |= 0x00000040u;
 }
 inline void UpdaterProto::clear_has_rho() {
-  _has_bits_[0] &= ~0x00000080u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void UpdaterProto::clear_rho() {
   rho_ = 0.9f;
@@ -7667,13 +7685,13 @@ inline void UpdaterProto::set_rho(float value) {
 
 // optional float base_learning_rate = 12;
 inline bool UpdaterProto::has_base_learning_rate() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void UpdaterProto::set_has_base_learning_rate() {
-  _has_bits_[0] |= 0x00000100u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void UpdaterProto::clear_has_base_learning_rate() {
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void UpdaterProto::clear_base_learning_rate() {
   base_learning_rate_ = 0;
@@ -7689,13 +7707,13 @@ inline void UpdaterProto::set_base_learning_rate(float value) {
 
 // optional float final_learning_rate = 13;
 inline bool UpdaterProto::has_final_learning_rate() const {
-  return (_has_bits_[0] & 0x00000200u) != 0;
+  return (_has_bits_[0] & 0x00000100u) != 0;
 }
 inline void UpdaterProto::set_has_final_learning_rate() {
-  _has_bits_[0] |= 0x00000200u;
+  _has_bits_[0] |= 0x00000100u;
 }
 inline void UpdaterProto::clear_has_final_learning_rate() {
-  _has_bits_[0] &= ~0x00000200u;
+  _has_bits_[0] &= ~0x00000100u;
 }
 inline void UpdaterProto::clear_final_learning_rate() {
   final_learning_rate_ = 0;
@@ -7711,13 +7729,13 @@ inline void UpdaterProto::set_final_learning_rate(float value) {
 
 // optional int32 learning_rate_change_frequency = 14;
 inline bool UpdaterProto::has_learning_rate_change_frequency() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
+  return (_has_bits_[0] & 0x00000200u) != 0;
 }
 inline void UpdaterProto::set_has_learning_rate_change_frequency() {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000200u;
 }
 inline void UpdaterProto::clear_has_learning_rate_change_frequency() {
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline void UpdaterProto::clear_learning_rate_change_frequency() {
   learning_rate_change_frequency_ = 0;
@@ -7733,13 +7751,13 @@ inline void UpdaterProto::set_learning_rate_change_frequency(::google::protobuf:
 
 // optional .singa.UpdaterProto.ChangeProto learning_rate_change_method = 16 [default = kFixed];
 inline bool UpdaterProto::has_learning_rate_change_method() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00000400u) != 0;
 }
 inline void UpdaterProto::set_has_learning_rate_change_method() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00000400u;
 }
 inline void UpdaterProto::clear_has_learning_rate_change_method() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline void UpdaterProto::clear_learning_rate_change_method() {
   learning_rate_change_method_ = 0;
@@ -7756,13 +7774,13 @@ inline void UpdaterProto::set_learning_rate_change_method(::singa::UpdaterProto_
 
 // optional int32 sync_frequency = 17 [default = 1];
 inline bool UpdaterProto::has_sync_frequency() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00000800u) != 0;
 }
 inline void UpdaterProto::set_has_sync_frequency() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00000800u;
 }
 inline void UpdaterProto::clear_has_sync_frequency() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline void UpdaterProto::clear_sync_frequency() {
   sync_frequency_ = 1;
@@ -7778,13 +7796,13 @@ inline void UpdaterProto::set_sync_frequency(::google::protobuf::int32 value) {
 
 // optional int32 warmup_steps = 25 [default = 10];
 inline bool UpdaterProto::has_warmup_steps() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void UpdaterProto::set_has_warmup_steps() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void UpdaterProto::clear_has_warmup_steps() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void UpdaterProto::clear_warmup_steps() {
   warmup_steps_ = 10;
@@ -7800,13 +7818,13 @@ inline void UpdaterProto::set_warmup_steps(::google::protobuf::int32 value) {
 
 // optional float moving_rate = 26 [default = 0];
 inline bool UpdaterProto::has_moving_rate() const {
-  return (_has_bits_[0] & 0x00004000u) != 0;
+  return (_has_bits_[0] & 0x00002000u) != 0;
 }
 inline void UpdaterProto::set_has_moving_rate() {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00002000u;
 }
 inline void UpdaterProto::clear_has_moving_rate() {
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline void UpdaterProto::clear_moving_rate() {
   moving_rate_ = 0;
@@ -7822,13 +7840,13 @@ inline void UpdaterProto::set_moving_rate(float value) {
 
 // optional string param_type = 27 [default = "Param"];
 inline bool UpdaterProto::has_param_type() const {
-  return (_has_bits_[0] & 0x00008000u) != 0;
+  return (_has_bits_[0] & 0x00004000u) != 0;
 }
 inline void UpdaterProto::set_has_param_type() {
-  _has_bits_[0] |= 0x00008000u;
+  _has_bits_[0] |= 0x00004000u;
 }
 inline void UpdaterProto::clear_has_param_type() {
-  _has_bits_[0] &= ~0x00008000u;
+  _has_bits_[0] &= ~0x00004000u;
 }
 inline void UpdaterProto::clear_param_type() {
   if (param_type_ != _default_param_type_) {
@@ -8112,16 +8130,24 @@ inline const EnumDescriptor* GetEnumDescriptor< ::singa::Record_Type>() {
   return ::singa::Record_Type_descriptor();
 }
 template <>
-inline const EnumDescriptor* GetEnumDescriptor< ::singa::UpdaterProto_Type>() {
-  return ::singa::UpdaterProto_Type_descriptor();
-}
-template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::singa::UpdaterProto_ChangeProto>() {
   return ::singa::UpdaterProto_ChangeProto_descriptor();
 }
 template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::singa::MsgType>() {
+  return ::singa::MsgType_descriptor();
+}
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::singa::EntityType>() {
+  return ::singa::EntityType_descriptor();
+}
+template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::singa::Phase>() {
   return ::singa::Phase_descriptor();
+}
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::singa::ShareOption>() {
+  return ::singa::ShareOption_descriptor();
 }
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::singa::PartitionType>() {

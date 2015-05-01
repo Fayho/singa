@@ -1,16 +1,22 @@
 #ifndef INCLUDE_SERVER_SERVER_H_
 #define INCLUDE_SERVER_SERVER_H_
-#include "utils/cluster.h"
 #include <memory>
+#include "server/pm_server.h"
+#include "communication/socket.h"
+
 using std::shared_ptr;
 namespace singa {
 class Server{
  public:
-  explicit Server(shared_ptr<Cluster> cluster);
+  Server(int group_id, int server_id);
+  void Setup(const UpdaterProto& proto, shared_ptr<ParamShard> shard,
+    shared_ptr<Dealer> dealer);
   void Run();
 
  protected:
-  shared_ptr<Cluster> cluster_;
+  int group_id_, server_id_;
+  shared_ptr<PMServer> pmserver_;
+  shared_ptr<Dealer> dealer_;
 };
 } /* Server */
 #endif //INCLUDE_SERVER_SERVER_H_

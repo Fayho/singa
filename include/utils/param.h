@@ -4,65 +4,32 @@
 #include <string>
 #include <map>
 #include <functional>
-#include <czmq.h>
 #include "proto/model.pb.h"
 #include "utils/blob.h"
+#include "communication/msg.h"
 // Base paramter class.
 namespace singa {
-enum kMsgType{
-kGet=0,
-kPut=1,
-kSync=2,
-kUpdate=3,
-kSyncRequest=4,
-kSyncResponse=5,
-kStop=6,
-kData=7
-};
 class Param {
  public:
-   Param();
-   virtual ~Param();
+  Param();
+  virtual ~Param();
 
-  //Anh's stuff
-   //return only <content>
-   virtual zmsg_t* ParseToMsg(); /** Parse Param's content to zmsg_t message */
+  virtual Msg* GenGetMsg(void* arg=nullptr);
+  virtual Msg* GenPutMsg(void* arg=nullptr);
+  virtual Msg* GenUpdateMsg(void* arg=nullptr);
+  virtual Msg* GenSyncMsg(void* arg=nullptr);
 
-   //msg of the format <kData><paramId><content>
-   virtual void ParseToParam(zmsg_t **msg);
+  virtual Msg* HandleGetMsg(Msg** msg);
+  virtual Msg* HandlePutMsg(Msg** msg);
+  virtual int ParseUpdateMsg(Msg** msg);
+  virtual Msg* GenUpdateResponseMsg(void* arg=nullptr);
+  virtual Msg* HandleSyncMsg(Msg** msg);
 
-   //End of Anh's stuff
+  virtual int ParseGetResponseMsg(Msg** msg);
+  virtual int ParsePutResponseMsg(Msg** msg);
+  virtual int ParseUpdateResponseMsg(Msg** msg);
+  virtual int ParseSyncResponseMsg(Msg** msg);
 
-
-  /**
-   * handle put msg by server.
-   * Return NULL if successful
-   */
-  virtual zmsg_t* HandlePutMsg(zmsg_t** msg);
-
-  /**
-   * handle update msg
-   * return NULL if unsuccesful.
-   * return the parameter message
-   */
-  virtual zmsg_t* HandleUpdateMsg(zmsg_t **msg);
-
-  /**
-   * handle get msg by server
-   */
-  virtual zmsg_t* HandleGetMsg(zmsg_t** msg);
-  /**
-   * handle sync msg by server
-   */
-  virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
-  /**
-   * gen sync msg by worker
-   */
-  virtual zmsg_t *GenSyncMsgFromWorker(float sample_ratio);
-  /**
-   * parse sync msg by worker
-   */
-  virtual void ParseSyncMsgFromPS(zmsg_t** msg);
   /**
    * setup param shape
    */
@@ -71,25 +38,8 @@ class Param {
    * fill the data according to initmethod, i.e., random/gaussian/fixed value
    */
   virtual void Init();
-  /**
-   * if the Param shares data with others, then point to the owner.
-   * otherwise points to itself.
-   */
-  const Param* owner() const{
-    return owner_;
-  }
-  const std::string& name() {
-    return proto_.name();
-  }
-
-  int id() const{
-    return proto_.id();
-  }
-  void set_id(int id){
-    proto_.set_id(id);
-  }
   void ShareData(shared_ptr<Param> other){
-    owner_=other.get();
+    owner_=other->id();
     CHECK(std::equal(data_.shape().begin(), data_.shape().end(),
           other->data_.shape().begin()));
     data_.ShareData(other->data_);
@@ -105,6 +55,31 @@ class Param {
     return proto_.split_threshold();
   }
   */
+  /**
+   * if the Param shares data with others, then point to the owner.
+   * otherwise points to itself.
+   */
+  const int owner() const{
+    return owner_;
+  }
+  const std::string& name() {
+    return proto_.name();
+  }
+
+  int id() const{
+    return proto_.id();
+  }
+  void set_id(int id){
+    proto_.set_id(id);
+  }
+
+  int version() const {
+    return proto_.version();
+  }
+  void set_version(int v) {
+    proto_.set_version(v);
+  }
+
    /**
     * @return num of floats.
     */
@@ -146,28 +121,21 @@ class Param {
   float* mutable_cpu_history(){
     return history_.mutable_cpu_data();
   }
-  float* mutable_cpu_update(){
-    return update_.mutable_cpu_data();
-  }
- static int64_t ps_handle_sync, worker_gen_sync, worker_handle_sync;
  protected:
   /**
    * name of the parameter used to share wights between neuralnets
    */
   std::string name_;
-  //! content, gradient, history gradient and snapshot of this parameter
-  Blob<float> data_, grad_, history_, update_, snapshot_;
-  Param* owner_;
+  //! content, gradient, history gradient of this parameter
+  Blob<float> data_, grad_, history_;
+  int owner_;
 
   ParamProto proto_;
   int fan_in_;
-
-  zmutex_t *param_lock_;
 };
 
 /**
  * Sync with server by randomly sampling some parameters for every sync.
- */
 class RandomSyncParam: public Param{
  public:
   virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
@@ -189,15 +157,16 @@ class RandomSyncParam: public Param{
 
   Blob<float> snapshot_;
 };
+ */
 /**
  * Sync with server by elastic SGD see http://arxiv.org/abs/1412.6651.
- */
 class ElasticParam: public Param{
  public:
   virtual zmsg_t* HandleSyncMsg(zmsg_t** msg);
   virtual zmsg_t *GenSyncMsgFromWorker(float moving_rate);
   virtual void ParseSyncMsgFromPS(zmsg_t** msg);
 };
+ */
 
 
 }  // namespace singa

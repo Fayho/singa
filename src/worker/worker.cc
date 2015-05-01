@@ -2,194 +2,78 @@
 #include <thread>
 #include <memory>
 #include <iostream>
+#include "utils/singleton.h"
+#include "utils/factory.h"
 #include "worker/worker.h"
 #include "proto/model.pb.h"
-#include "utils/cluster.h"
 using std::thread;
 namespace singa {
-Worker::Worker(shared_ptr<Cluster> cluster){
-  cluster_=cluster;
+Worker::Worker( int group_id, int worker_id):
+   group_id_(group_id), worker_id_(worker_id){
 }
 
-void Worker::Start(ModelProto model){
-  LOG(ERROR)<<"Worker on "<<cluster_->hostname()<<" is starting...";
-  train_net_=SetupNeuralNet(model.neuralnet(), model.prefetch(), kTrain);
-  if(model.test_steps()){
-    test_net_=SetupNeuralNet(model.neuralnet(), model.prefetch(), kTest);
-    if(test_net_!=nullptr)
-      test_net_->ShareWeights(train_net_);
-  }
-  if(model.validation_steps()){
-    validation_net_=SetupNeuralNet(model.neuralnet(), model.prefetch(),
-        kValidation);
-    if(validation_net_!=nullptr)
-      validation_net_->ShareWeights(train_net_);
-  }
-
-  pm_=make_shared<ParamManager>(train_net_, model.updater());
-  pm_->InitParams(); //init local params
-
-  Setup(0, model); //setup main executor
-  int nthreads=cluster_->nthreads_per_procs();
-  vector<Executor*> executors(nthreads-1);
-  vector<thread> threads;
-  for(size_t i=1;i<executors.size();i++){
-    executors[i]=new Executor(i, model,  cluster_,pm_, train_net_);
-    threads.push_back(thread(&Executor::Run, executors[i], 0));
-  }
-
-  // warmup to get computation speed
-  Performance perf(train_net_);
-  int64_t start=zclock_mono();
-  for(int i=0;i<model.updater().warmup_steps();i++){
-    RunOneBatch(i, &perf);
-  }
-  int64_t end=zclock_mono();
-  pm_->SyncConfig((end-start)/1000.0f/model.updater().warmup_steps());
-
-  if(cluster_->nservers()){
-    if(cluster_->groupid()==0)
-      pm_->SendParamsToServers();
-    else
-      pm_->GetParamsFromServers(model.updater().warmup_steps());
-  }
-
-  Run(model.updater().warmup_steps());
-  for(auto& th: threads)
-    th.join();
-  for(size_t i=1;i<executors.size();i++){
-    delete executors[i];
+void Worker::Setup(const ModelProto& model,
+    shared_ptr<NeuralNet> train_net,
+    shared_ptr<SharedParamShard> shard,
+    shared_ptr<Dealer> layer_dealer,
+    shared_ptr<Dealer> param_dealer){
+  modelproto_=model;
+  layer_dealer_=layer_dealer;
+  param_dealer_=param_dealer;
+  pmworker_=shared_ptr<PMWorker>(Singleton<Factory<PMWorker>>::Instance()
+      ->Create("PMWorker"));
+  pmworker_->Setup(group_id_, worker_id_, shard);
+  step_=modelproto_.step();
+  // init params
+  for(auto layer: train_net->layers()){
+    if(group_id_==0&&layer->locationid()==worker_id_)
+      for(auto param: layer->GetParams()){
+        Put(param, step_);
+      }
+    for(auto param: layer->GetParams())
+      Get(param, step_);
   }
 }
 
-void Worker::Resume() {
-  // TODO implement resume from snapshot
-}
-
-shared_ptr<NeuralNet> Worker::SetupNeuralNet(const NetProto& np, bool prefetch,
-    Phase phase){
-  NetProto proto;
-  proto.set_partition_type(np.partition_type());
-  // exclude layers if necessary
-  for(auto& layer:np.layer()){
-    bool include=true;
-    for(int x: layer.exclude()){
-      if(x==phase)
-        include=false;
-    }
-    if(include){
-      LayerProto* lp=proto.add_layer();
-      lp->CopyFrom(layer);
-    }
-  }
-  LOG(INFO)<<"NeuralNet config is "<<proto.DebugString();
-  shared_ptr<NeuralNet> net(new NeuralNet(proto));
-  // set prefetch
-  for(auto& layer: net->parserlayers()){
-    layer->set_prefetch(prefetch);
-  }
-  for(auto& layer: net->datalayers()){
-    layer->set_prefetch(prefetch);
-  }
-  return net;
-}
-
-// main working thread
-void Worker::Run(const int start_step){
-  step_=start_step;
+void Worker::Run(){
+  step_=modelproto_.step();
   Performance perf(train_net_);
   while(!StopNow(step_)){
     RunOneBatch(step_, &perf);
     step_++;
-    // TODO communicate with others, e.g., zookeeper
   }
 }
-
-/**************************Executor***********************************/
-Executor::Executor(int local_threadid, const ModelProto& model,
-    shared_ptr<Cluster> cluster,
-    shared_ptr<ParamManager> pm,
-    shared_ptr<NeuralNet> train_net,
-    shared_ptr<NeuralNet> test_net,
-    shared_ptr<NeuralNet> validation_net):
-      cluster_(cluster),
-      pm_(pm),
-      train_net_(train_net),
-      test_net_(test_net),
-      validation_net_(validation_net){
-        Setup(local_threadid, model);
-      }
-
-void Executor::Setup(int local_threadid, const ModelProto& model){
-  tForward_=tBackward_=tSyncData_=tSyncParam_=0;
-  modelproto_=model;
-  local_threadid_=local_threadid;
-  if(model.prefetch()){
-    for(auto& layer: train_net_->datalayers()){
-      if(cluster_->group_threadid(local_threadid_)==layer->locationid())
-        localDataLayers_.push_back(layer);
-    }
-    if(localDataLayers_.size())
-      prefetch_thread_=std::thread(Executor::PrefetchData,
-          std::ref(localDataLayers_), true,1);
+int Worker::Put(shared_ptr<Param> param, int step){
+  auto msg=pmworker_->Put(param, step);
+  if(msg!=nullptr)
+    param_dealer_->Send(msg);
+  return 1;
+}
+int Worker::Get(shared_ptr<Param> param, int step){
+  auto msg=pmworker_->Get(param, step);
+  if(msg!=nullptr)
+    param_dealer_->Send(msg);
+  return 1;
+}
+int Worker::Update(shared_ptr<Param> param, int step){
+  auto msg=pmworker_->Update(param, step);
+  if(msg!=nullptr)
+    param_dealer_->Send(msg);
+  return 1;
+}
+int Worker::Collect(shared_ptr<Param> param, int step){
+  while(param->version()<step){
+    Msg* msg=param_dealer_->Receive();
+    pmworker_->Collect(param, &msg);
   }
-  int gthreadid=cluster_->group_threadid(local_threadid);
-
-  // for transfer data due to Model Partition
-  for(auto& layer: train_net_->layers()){
-    if(layer->locationid()==gthreadid){
-      int pushloc=-1;
-      if(layer->is_bridgesrclayer())
-        pushloc=layer->dstlayers()[0]->locationid();
-      else if(layer->is_bridgedstlayer())
-        pushloc=layer->srclayers()[0]->locationid();
-      if(pushloc!=-1&&push_.find(pushloc)==push_.end()){
-        string endpoint="@tcp://*:"+cluster_->pull_port(local_threadid);
-        pull_=zsock_new_pull(endpoint.c_str());
-        string pushaddr=cluster_->group_thread_addr(pushloc);
-        endpoint=">tcp://"+pushaddr
-            +":"+cluster_->pull_port(pushloc%cluster_->nthreads_per_procs());
-        push_[pushloc]= zsock_new_push(endpoint.c_str());
-      }
-    }
-  }
+  return 1;
 }
 
-Executor::~Executor(){
-  if(prefetch_thread_.joinable())
-    prefetch_thread_.join();
-}
-
-void Executor::PrefetchData(const vector<DataLayer*>& datalayers, bool training,
-    int steps){
-  if(datalayers.size()==0)
-    return;
-  for(int i=0;i<steps;i++){
-    for(auto& layer: datalayers){
-      layer->Prefetching(training);
-      for(auto& dstlayer: layer->dstlayers()){
-        CHECK(dstlayer->is_parserlayer());
-        auto parserlayer=static_cast<ParserLayer*>(dstlayer.get());
-        parserlayer->Prefetching(training);
-      }
-    }
-  }
-}
-
-void Executor::Run(int step){
-  step_=step;
-  while(!StopNow(step_)){
-    RunOneBatch(step_);
-    step_++;
-  }
-}
-
-void Executor::RunOneBatch(int step, Performance* perf){
+void Worker::RunOneBatch(int step, Performance* perf){
   //DLOG(ERROR)<<"Step "<<step;
-  ticks_++;
   // Test will call Pull which updates the sync time
   // Hence we store the sync time, and restore it later
-  float tSyncData=tSyncData_, tSyncParam=tSyncParam_;
+  //float tSyncData=tSyncData_, tSyncParam=tSyncParam_;
   if(ValidateNow(step)){
     LOG(ERROR)<<"Validation at step "<<step;
     Test(validation_net_, modelproto_.validation_steps(), perf!=nullptr);
@@ -198,8 +82,7 @@ void Executor::RunOneBatch(int step, Performance* perf){
     LOG(ERROR)<<"Test at step "<<step;
     Test(test_net_, modelproto_.test_steps(), perf!=nullptr);
   }
-  tSyncData_=tSyncData;
-  tSyncParam_=tSyncParam;
+  //tSyncData_=tSyncData; tSyncParam_=tSyncParam;
 
   TrainOneBatch(step);
   if(perf!=nullptr){
@@ -208,16 +91,19 @@ void Executor::RunOneBatch(int step, Performance* perf){
       LOG(ERROR)<<"Training at step "<<step;
       LOG(ERROR)<<"\t"<<perf->ToString();
       perf->Reset();
-      LOG(ERROR)<<"\t"<<TimerInfo();
+      //LOG(ERROR)<<"\t"<<TimerInfo();
     }
   }
 
+  /*
   if(CheckpointNow(step)){
     pm_->Checkpoint(cluster_->workspace()+"/snapshot-"+std::to_string(step));
   }
+  */
 }
 
-void Executor::Pull(zsock_t* pull, shared_ptr<NeuralNet> net){
+void Worker::ReceiveBlobs(shared_ptr<NeuralNet> net){
+  /*
   int type;
   char *name;
   int64_t tick=zclock_mono();
@@ -239,29 +125,42 @@ void Executor::Pull(zsock_t* pull, shared_ptr<NeuralNet> net){
   zframe_destroy(&frame);
   delete name;
   tSyncData_+=zclock_mono()-tick;
+  */
 }
 
-void Executor::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
+void Worker::SendBlob(){
+
+}
+
+void Worker::Test(shared_ptr<NeuralNet> net, int nsteps, bool disperf){
+  Performance perf(net);
+  for(int step=0;step<nsteps;step++){
+    TestOneBatch(net, step, kTest);
+    if(disperf)
+      perf.Update();
+  }
+  if(disperf)
+    LOG(ERROR)<<"\t"<<perf.ToString();
+}
+
+/****************************BPWorker**********************************/
+
+void BPWorker::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
   auto& layers=net->layers();
   for(auto& layer: layers){
-    if(cluster_->group_procsid(layer->locationid())==cluster_->group_procsid()){
+    if(layer->locationid()==worker_id_){
       if(layer->is_bridgedstlayer()){
-        auto* dst=static_cast<BridgeDstLayer*>(layer.get());
-        while(!dst->ready())
-          Pull(pull_, train_net_);
+        //auto* dst=static_cast<BridgeDstLayer*>(layer.get());
+        // receive fea blobs
       }
       if(training){
         for(shared_ptr<Param> p: layer->GetParams()){
-          pm_->WaitUpdate(p, step, local_threadid_);
+          Collect(p, step);
         }
       }
       layer->ComputeFeature(training);
       if(layer->is_bridgesrclayer()){
-        zframe_t* frame=zframe_new(layer->data().cpu_data(),
-            layer->data().count()*sizeof(float));
-        zsock_send(push_[layer->locationid()], "isf",
-            kDataFrame, layer->dstlayers()[0]->name().c_str(), frame);
-        zframe_destroy(&frame);
+        // send fea blobs
       }
       if(training&&DisplayDebugInfo(step)&&layer->mutable_data()!=nullptr){
         LOG(INFO)<<StringPrintf("Forward layer  %10s data norm1 %13.9f",
@@ -271,15 +170,14 @@ void Executor::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
   }
 }
 
-void Executor::Backward(shared_ptr<NeuralNet> net, int step){
+void BPWorker::Backward(shared_ptr<NeuralNet> net, int step){
   auto& layers=net->layers();
   for (auto it = layers.rbegin(); it != layers.rend(); it++){
     shared_ptr<Layer> layer=*it;
-    if(cluster_->group_procsid(layer->locationid())==cluster_->group_procsid()){
+    if(layer->locationid()==worker_id_){
       if(layer->is_bridgesrclayer()){
-        auto* src=static_cast<BridgeSrcLayer*>(layer.get());
-        while(!src->ready())
-          Pull(pull_, train_net_);
+        //auto* src=static_cast<BridgeSrcLayer*>(layer.get());
+        // receive grad blobs
       }
       layer->ComputeGradient();
       if(DisplayDebugInfo(step)&&layer->mutable_grad()!=nullptr){
@@ -292,64 +190,24 @@ void Executor::Backward(shared_ptr<NeuralNet> net, int step){
               p->data().asum_data(), p->grad().asum_data());
       }
       for(shared_ptr<Param> p: layer->GetParams()){
-        pm_->UpdateParam(p, step, local_threadid_);
+        pmworker_->Update(p, step);
       }
       if(layer->is_bridgedstlayer()){
-        zframe_t* frame=zframe_new(layer->grad().cpu_data(),
-            layer->data().count()*sizeof(float));
-        zsock_send(push_[layer->locationid()], "isf",
-            kGradFrame, layer->srclayers()[0]->name().c_str(), frame);
-        zframe_destroy(&frame);
+        // send grad blobs
       }
     }
   }
 }
 
-void Executor::TrainOneBatch(int step){
-  int64_t tick=zclock_mono();
-  if(prefetch_thread_.joinable()){
-      prefetch_thread_.join();
-      prefetch_thread_=std::thread(Executor::PrefetchData,
-          std::ref(localDataLayers_), true,1);
-  }
+void BPWorker::TrainOneBatch(int step){
   Forward(train_net_, step, true);
-  tForward_+=zclock_mono()-tick;
-  tick=zclock_mono();
   Backward(train_net_, step);
-  tBackward_+=zclock_mono()-tick;
 }
 
-void Executor::Test(shared_ptr<NeuralNet> net, int nsteps, bool disperf){
-  std::thread prefetch;
-  vector<DataLayer*> localDataLayers;
-  if(modelproto_.prefetch()){
-    auto cluster=Cluster::Get();
-    for(auto& layer: net->datalayers()){
-      int locid=layer->locationid();
-      if(cluster->group_threadid(local_threadid_)==locid)
-        localDataLayers.push_back(layer);
-    }
-    if(localDataLayers.size())
-      prefetch=std::thread(Executor::PrefetchData,  std::ref(localDataLayers),
-          false,1);
-  }
-  Performance perf(net);
-  for(int b=0;b<nsteps;b++){
-    if(prefetch.joinable()){
-      prefetch.join();
-      if(b<nsteps-1)
-        prefetch=std::thread(Executor::PrefetchData, std::ref(localDataLayers),
-          false,1);
-    }
-    Forward(net, b, false);
-    if(disperf)
-      perf.Update();
-  }
-  if(prefetch.joinable())
-    prefetch.join();
-  if(disperf)
-    LOG(ERROR)<<"\t"<<perf.ToString();
+void BPWorker::TestOneBatch(shared_ptr<NeuralNet> net,int step, Phase phase){
+  Forward(net, step, false);
 }
+
 /*********************Implementation for Performance class*******************/
 Performance::Performance(shared_ptr<NeuralNet> net):net_(net), counter_(0){
   for(auto& layer: net->losslayers()){
@@ -388,5 +246,38 @@ string Performance::ToString(){
   }
   return disp;
 }
+/*
+void Executor::Setup(int local_threadid, const ModelProto& model){
+  tForward_=tBackward_=tSyncData_=tSyncParam_=0;
+  modelproto_=model;
+  local_threadid_=local_threadid;
+  if(model.prefetch()){
+    for(auto& layer: train_net_->datalayers()){
+      if(cluster_->group_threadid(local_threadid_)==layer->locationid())
+        localDataLayers_.push_back(layer);
+    }
+    if(localDataLayers_.size())
+      prefetch_thread_=std::thread(Executor::PrefetchData,
+          std::ref(localDataLayers_), true,1);
+  }
+  int gthreadid=cluster_->group_threadid(local_threadid);
+}
+
+void Executor::PrefetchData(const vector<DataLayer*>& datalayers, bool training,
+    int steps){
+  if(datalayers.size()==0)
+    return;
+  for(int i=0;i<steps;i++){
+    for(auto& layer: datalayers){
+      layer->Prefetching(training);
+      for(auto& dstlayer: layer->dstlayers()){
+        CHECK(dstlayer->is_parserlayer());
+        auto parserlayer=static_cast<ParserLayer*>(dstlayer.get());
+        parserlayer->Prefetching(training);
+      }
+    }
+  }
+}
+*/
 
 }  // namespace singa

@@ -1,36 +1,41 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
-#include "utils/cluster.h"
-#include "utils/common.h"
-#include "proto/model.pb.h"
-#include "proto/cluster.pb.h"
-#include "server/server.h"
-#include "worker/worker.h"
+#include "trainer.h"
+#include "utils/updater.h"
+#include "utils/param.h"
+#include "utils/singleton.h"
+#include "utils/factory.h"
+#include "worker/neuralnet.h"
+#include "worker/pm_worker.h"
+#include "server/pm_server.h"
 
 /**
  * \file main.cc is the main entry of SINGA.
  */
-DEFINE_int32(procsID, 0, "global process ID");
-DEFINE_string(hostfile, "examples/imagenet12/hostfile", "hostfile");
+DEFINE_int32(procsID, 0, "Global process ID");
 DEFINE_string(cluster, "examples/imagenet12/cluster.conf",
-    "configuration file for the cluster");
+    "Configuration file for the cluster");
 DEFINE_string(model, "examples/imagenet12/model.conf",
     "Deep learning model configuration file");
 
-DEFINE_string(topology_config,"examples/imagenet12/topology.conf", "Network of servers");
-DEFINE_int32(server_threads,1,"Number of server's worker threads per process");
-DEFINE_int32(client_threads,1,"Number of client's worker threads per process");
-
 /**
- * Registry Layer sub-classes and Param sub-classes.
- * User implemented Layer or Param sub-classes should be registryed here.
+ * Register layers, and other customizable classes.
+ *
+ * If users want to use their own implemented classes, they should register
+ * them here.
  */
-void RegistryClasses(const singa::ModelProto& proto){
-  singa::NeuralNet::RegistryLayers();
-  singa::NeuralNet::RegistryParam(proto.updater().param_type());
+void RegisterClasses(const singa::ModelProto& proto){
+  singa::NeuralNet::RegisterLayers();
+  Singleton<Factory<singa::Param>>::Instance()->Register(
+      "Param", CreateInstance(singa::Param, singa::Param));
+  Singleton<Factory<singa::Updater>>::Instance() ->Register(
+      "Updater", CreateInstance(singa::SGDUpdater, singa::Updater));
+  Singleton<Factory<singa::PMWorker>>::Instance() ->Register(
+      "PMWorker", CreateInstance(singa::PMWorker, singa::PMWorker));
+  Singleton<Factory<singa::PMServer>>::Instance() ->Register(
+      "PMServer", CreateInstance(singa::PMServer, singa::PMServer));
 }
 
-// for debug use
 #ifndef FLAGS_v
   DEFINE_int32(v, 3, "vlog controller");
 #endif
@@ -40,23 +45,15 @@ int main(int argc, char **argv) {
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  // Init Cluster
-  singa::ClusterProto pcluster;
-  singa::ReadProtoFromTextFile(FLAGS_cluster.c_str(), &pcluster);
-  auto cluster=singa::Cluster::Get(pcluster, FLAGS_hostfile, FLAGS_procsID);
+  singa::ClusterProto cluster;
+  singa::ReadProtoFromTextFile(FLAGS_cluster.c_str(), &cluster);
   singa::ModelProto model;
   singa::ReadProtoFromTextFile(FLAGS_model.c_str(), &model);
-  LOG(INFO)<<"The cluster config is\n"<<pcluster.DebugString()
+  LOG(INFO)<<"The cluster config is\n"<<cluster.DebugString()
     <<"\nThe model config is\n"<<model.DebugString();
 
-  RegistryClasses(model);
-  if(cluster->AmIServer()) {
-    singa::Server server(cluster);
-    server.Run();
-  }else {
-    singa::Worker worker(cluster);
-    worker.Start(model);
-  }
-  LOG(ERROR)<<cluster->hostname()<<" has shut down";
+  RegisterClasses(model);
+  singa::Trainer trainer;
+  trainer.Start(model, cluster, FLAGS_procsID);
   return 0;
 }

@@ -159,7 +159,7 @@ void RMSPropUpdater::Update(int step, shared_ptr<Param> param, float grad_scale)
   data-=lr*grad/(F<op::sqrtop>(history,delta_));
 }
 
-/***********************AdaDelta******************************/
+/***********************AdaDelta******************************
 void AdaDeltaUpdater::Init(const UpdaterProto& proto){
   Updater::Init(proto);
   delta_=proto.delta();
@@ -187,5 +187,6 @@ void AdaDeltaUpdater::Update(int step, shared_ptr<Param> param, float grad_scale
   update=rho_*update+(1-rho_)*F<op::square>(tmp);
   data-=tmp;
 }
+*/
 
 } /* singa */

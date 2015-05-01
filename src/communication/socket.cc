@@ -1,44 +1,44 @@
 #include "communication/socket.h"
 
 namespace singa {
-ZMQPoller::ZMQPoller(){
+Poller::Poller(){
   poller_=zpoller_new(NULL);
 }
 
-void ZMQPoller::Add(Socket* socket){
+void Poller::Add(Socket* socket){
   zsock_t* zsock=static_cast<zsock_t*>(socket->InternalID());
   zpoller_add(poller_, zsock);
   zsock2Socket_[zsock]=socket;
 }
 
-Socket* ZMQPoller::Poll(int timeout){
+Socket* Poller::Poll(int timeout){
   zsock_t* sock=(zsock_t*)zpoller_wait(poller_, timeout);
   if(sock!=NULL)
     return zsock2Socket_[sock];
   else return nullptr;
 }
 
-int ZMQDealer::Connect(string endpoint){
+int Dealer::Connect(string endpoint){
   dealer_=zsock_new_dealer(endpoint.c_str());
   CHECK_NOTNULL(dealer_);
   return 1;
 }
-int ZMQDealer::Send(Msg *msg){
-  zmsg_t* zmsg=(static_cast<ZMQMsg*>(msg))->DumpToZmsg();
+int Dealer::Send(Msg *msg){
+  zmsg_t* zmsg=(static_cast<Msg*>(msg))->DumpToZmsg();
   zmsg_send(&zmsg, dealer_);
   return 1;
 }
 
-Msg* ZMQDealer::Receive(){
+Msg* Dealer::Receive(){
   zmsg_t* zmsg=zmsg_recv(dealer_);
-  ZMQMsg* msg=new ZMQMsg();
+  Msg* msg=new Msg();
   msg->ParseFromZmsg(zmsg);
   return msg;
 }
-ZMQDealer::~ZMQDealer(){
+Dealer::~Dealer(){
   zsock_destroy(&dealer_);
 }
-int ZMQRouter::Bind(string endpoint){
+int Router::Bind(string endpoint){
   router_=zsock_new_router("inproc://router");
   CHECK_NOTNULL(router_);
   if(endpoint.length())
@@ -46,9 +46,9 @@ int ZMQRouter::Bind(string endpoint){
   return 1;
 }
 
-int ZMQRouter::Send(Msg *msg){
-  zmsg_t* zmsg=static_cast<ZMQMsg*>(msg)->DumpToZmsg();
-  int dstid=static_cast<ZMQMsg*>(msg)->dst();
+int Router::Send(Msg *msg){
+  zmsg_t* zmsg=static_cast<Msg*>(msg)->DumpToZmsg();
+  int dstid=static_cast<Msg*>(msg)->dst();
   if(id2addr_.find(dstid)!=id2addr_.end()){
     zframe_t* addr=zframe_dup(id2addr_[dstid]);
     zmsg_prepend(zmsg, &addr);
@@ -63,10 +63,10 @@ int ZMQRouter::Send(Msg *msg){
   return 1;
 }
 
-Msg* ZMQRouter::Receive(){
+Msg* Router::Receive(){
   zmsg_t* zmsg=zmsg_recv(router_);
   zframe_t* dealer=zmsg_pop(zmsg);
-  ZMQMsg* msg=new ZMQMsg();
+  Msg* msg=new Msg();
   msg->ParseFromZmsg(zmsg);
   if (id2addr_.find(msg->src())==id2addr_.end()){
     id2addr_[msg->src()]=dealer;
@@ -84,7 +84,7 @@ Msg* ZMQRouter::Receive(){
   return msg;
 }
 
-ZMQRouter::~ZMQRouter(){
+Router::~Router(){
   zsock_destroy(&router_);
   for(auto it: id2addr_)
     zframe_destroy(&it.second);

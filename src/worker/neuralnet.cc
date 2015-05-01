@@ -10,7 +10,7 @@
 namespace singa {
 #define CreateLayer(id) CreateInstance(id, Layer)
 
-void NeuralNet::RegistryLayers(){
+void NeuralNet::RegisterLayers(){
   Factory<Layer>* factory=Singleton<Factory<Layer>>::Instance();
   factory->Register("kConvolution", CreateLayer(ConvolutionLayer));
   factory->Register("kConcate", CreateLayer(ConcateLayer));
@@ -31,20 +31,24 @@ void NeuralNet::RegistryLayers(){
   factory->Register("kSplit", CreateLayer(SplitLayer));
   factory->Register("kTanh", CreateLayer(TanhLayer));
 }
-
-void NeuralNet::RegistryParam(string param_type){
-  Factory<Param>* factory=Singleton<Factory<Param>>::Instance();
-  if(param_type=="RandomSync")
-    factory->Register("Param",
-        CreateInstance(RandomSyncParam, Param));
-  else if(param_type=="Elastic")
-    factory->Register("Param",
-        CreateInstance(ElasticParam, Param));
-  else {
-    LOG(ERROR)<<"Use default parameter type "<<param_type;
-    factory->Register("Param",
-        CreateInstance(Param, Param));
+shared_ptr<NeuralNet> NeuralNet::SetupNeuralNet(const NetProto& np, Phase phase){
+  NetProto proto;
+  proto.set_partition_type(np.partition_type());
+  // exclude layers if necessary
+  for(auto& layer:np.layer()){
+    bool include=true;
+    for(int x: layer.exclude()){
+      if(x==phase)
+        include=false;
+    }
+    if(include){
+      LayerProto* lp=proto.add_layer();
+      lp->CopyFrom(layer);
+    }
   }
+  LOG(INFO)<<"NeuralNet config is "<<proto.DebugString();
+  shared_ptr<NeuralNet> net(new NeuralNet(proto));
+  return net;
 }
 NeuralNet::NeuralNet(NetProto net_proto, int group_size) {
   group_size_=group_size;
@@ -380,7 +384,7 @@ string NeuralNet::DebugInfo(){
   }
   return ret;
 }
-void NeuralNet::ShareWeights(shared_ptr<NeuralNet> other){
+void NeuralNet::ShareParams(shared_ptr<NeuralNet> other, int flag){
   for(auto& layer: layers_){
     auto otherlayer=other->name2layer(layer->name());
     if(otherlayer!=nullptr){

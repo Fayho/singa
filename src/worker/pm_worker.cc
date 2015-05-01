@@ -7,15 +7,155 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "worker/pm_client.h"
 #include "gflags/gflags.h"
 #include <glog/logging.h>
+#include "proto/model.pb.h"
+#include "worker/pm_worker.h"
+#include "mshadow/tensor.h"
+#include "utils/cluster.h"
 
-DECLARE_string(topology_config);
-DECLARE_int32(client_threads);
 
 namespace singa{
 
+void PMWorker::Setup(int group_id, int worker_id,
+    shared_ptr<SharedParamShard> shard){
+  group_id_=group_id;
+  worker_id_=worker_id;
+  shard_=shard;
+}
+int PMWorker::Sharding(int param_id){
+  return param_id%Cluster::Get()->nservers_per_group();
+}
+/*
+int PMWorker::Sharding(int param_id){
+  static map<int, int> id2procs;
+  if(id2procs.find(param_id)==id2procs.end()){
+  auto cluster=Cluster::Get();
+  int server_group=group_id_%cluster->nserver_groups();
+  int nprocs_per_server_group=
+    cluster->nservers_per_group()/cluster->nservers_per_procs();
+  int procsid=server_group*nprocs_per_server_group+
+    param_id%nprocs_per_server_group;
+  procsid= cluster->server_worker_separate()?
+    cluster->nworker_procs()+procsid:procsid;
+  id2procs[param_id]=procsid;
+  }
+  return id2procs[param_id];
+}
+*/
+
+Msg* PMWorker::Put(Msg** msg){
+  return *msg;
+}
+
+Msg* PMWorker::Put(shared_ptr<Param> param, int step){
+  // only owner can put shared parameter
+  if(param->owner()<0||param->owner()==param->id()){
+    Msg* msg= param->GenPutMsg(&step);
+    msg->set_src(group_id_, worker_id_, kWorkerParam);
+    msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
+        Sharding(param->id()), kServer);
+    msg->set_type(kPut);
+    msg->set_target(param->id());
+    return msg;
+  }else
+    return nullptr;
+}
+
+Msg* PMWorker::Get(Msg** msg){
+  return *msg;
+}
+
+Msg* PMWorker::Get(shared_ptr<Param> param, int step){
+  bool send=false;
+  int id=param->id();
+  shared_ptr<ParamCounter> entry=nullptr;
+  if(param->owner()>=0){
+    entry=shard_->at(id);
+    entry->nGet++;
+    send=entry->nGet/entry->nLocal==step;
+  }
+  if(param->owner()<0||send){
+    Msg* msg=nullptr;
+    msg->set_src(group_id_, worker_id_, kWorkerParam);
+    if(param->owner()<0){
+      msg=param->GenGetMsg(&step);
+      msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
+          Sharding(id), kServer);
+    } else {
+      msg=entry->param->GenGetMsg(&step);
+      msg->set_dst(entry->owner_procs,kStub);
+    }
+    msg->set_type(kGet);
+    msg->set_target(id);
+    return msg;
+  }else
+    return nullptr;
+}
+
+Msg* PMWorker::Update(Msg** msg){
+  return *msg;
+}
+Msg* PMWorker::Update(shared_ptr<Param> param, int step){
+  bool send=false;
+  int id=param->id();
+  shared_ptr<ParamCounter> entry;
+  if(param->owner()>=0){
+    entry=shard_->at(param->id());
+    entry->nGet++;
+    send=entry->nGet/entry->nLocal==step;
+    auto shape=mshadow::Shape1(param->size());
+    mshadow::Tensor<mshadow::cpu,1> grad(param->mutable_cpu_grad(), shape);
+    mshadow::Tensor<mshadow::cpu,1> agg(entry->param->mutable_cpu_grad(), shape);
+    agg+=grad;
+  }
+  if(param->owner()<0||send){
+    Msg* msg=nullptr;
+    if(param->owner()<0){
+      msg=param->GenUpdateMsg(&step);
+      msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
+          Sharding(id), kServer);
+    } else {
+      entry->param->GenUpdateMsg(&step);
+      msg->set_dst(entry->owner_procs,kStub);
+      memset(param->mutable_cpu_data(), 0, sizeof(float)*param->size());
+    }
+    msg->set_type(kUpdate);
+    msg->set_target(id);
+    msg->set_src(group_id_, worker_id_, kWorkerParam);
+    return msg;
+  }else
+    return nullptr;
+}
+
+Msg* PMWorker::Collect(Msg** msg){
+  return *msg;
+}
+
+Msg* PMWorker::Collect(shared_ptr<Param> param, Msg** msg){
+  auto p=param;
+  if(param->owner()>=0){
+    auto entry=shard_->at(param->id());
+    p=entry->param;
+  }
+  int id=(*msg)->target();
+  int type=(*msg)->type();
+  auto pp=shard_->at(id)->param;
+  if(type==kRGet){
+    pp->ParseGetResponseMsg(msg);
+  }else if(type==kRUpdate){
+    pp->ParseUpdateResponseMsg(msg);
+  }
+  if(param->owner()>=0){
+    // forwarding to workers on other procs
+  }
+  param->set_version(p->version());
+  delete (*msg);
+  *msg=nullptr;
+  return nullptr;
+}
+
+/*
 //id is the global worker id
 SingaClient::SingaClient(int global_id, Topology &topology, vector<string> &hosts) {
 	//Read the config files and store endpoints
@@ -165,7 +305,7 @@ void ClientThread(void *args, zctx_t *ctx, void *pipe){
 			pmclient->Put(i, params[i]);
 		}
 		VLOG(3)<<"Done PUT requests for populating servers.";
-		zclock_sleep(2000); 
+		zclock_sleep(2000);
 	}
 	zframe_destroy(&msg);
 	//END TESTING
@@ -179,7 +319,7 @@ void ClientThread(void *args, zctx_t *ctx, void *pipe){
 
 	int iterations = 1;
 	while (iterations<=200){
-		VLOG(3) << "Iteration "<<iterations; 
+		VLOG(3) << "Iteration "<<iterations;
 		test_update(pmclient, params);
 		test_collect(pmclient);
 		iterations++;
@@ -199,11 +339,11 @@ void test_get(PMClient *client){
 void test_collect(PMClient *client){
 	for (int i=0; i<12; i++){
 		Param pm;
-		int64_t start_time = zclock_time(); 
+		int64_t start_time = zclock_time();
 		while (!client->Collect(&pm))
 			zclock_sleep(1);
-		int64_t end_time = zclock_time(); 
-		VLOG(3) << "Collected: " <<(end_time-start_time); 
+		int64_t end_time = zclock_time();
+		VLOG(3) << "Collected: " <<(end_time-start_time);
 	}
 }
 
@@ -211,75 +351,7 @@ void test_update(PMClient *client, vector<Param*> params){
 	for (int i=0; i<params.size(); i++)
 		client->Update(i, params[i]);
 }
+*/
 
-void PMClient::Put(int paramId, Param *param){
-	zmsg_t *data = param->ParseToMsg();
-	zmsg_pushstrf(data,"%d",paramId);
-	zmsg_pushstrf(data,"%d",kPut);
-	zmsg_send(&data, this->socket_);
-}
 
-int PMClient::Get(int paramId, Param *param){
-	if (!this->param_shard_->is_local(paramId)){
-		zmsg_t *msg = zmsg_new();
-		zmsg_pushstrf(msg, "%d",paramId);
-		zmsg_pushstrf(msg, "%d", kGet);
-		zmsg_send(&msg, this->socket_);
-		return NON_LOCAL;
-	}
-	else{
-		zmsg_t *msg = this->param_shard_->get(paramId, NULL);
-		if (msg){
-			zframe_t *tmp = zmsg_pop(msg);
-			zframe_destroy(&tmp);
-			tmp = zmsg_pop(msg);
-			zframe_destroy(&tmp);
-			param->ParseToParam(&msg);
-			return LOCAL_SUCCESS;
-		}
-		else
-			return LOCAL_FAIL;
-	}
-}
-
-int PMClient::Update(int paramId, Param *param){
-	if (!this->param_shard_->is_local(paramId)) {
-		zmsg_t *msg = param->ParseToMsg();
-		zmsg_pushstrf(msg, "%d", paramId);
-		zmsg_pushstrf(msg, "%d", kUpdate);
-		zmsg_send(&msg, this->socket_);
-		return NON_LOCAL;
-	} else {
-		zmsg_t *msg = this->param_shard_->update(paramId, NULL);
-		if (msg) {
-			zframe_t *tmp = zmsg_pop(msg);
-			zframe_destroy(&tmp);
-			tmp = zmsg_pop(msg);
-			zframe_destroy(&tmp);
-			param->ParseToParam(&msg);
-			return LOCAL_SUCCESS;
-		} else
-			return LOCAL_FAIL;
-	}
-}
-
-bool PMClient::Collect(Param* param){
-	zmq_pollitem_t items[] = {{this->socket_, 0, ZMQ_POLLIN, 0}};
-	int rc = zmq_poll(items,1,0);
-	if (rc<0) return false;
-
-	if (items[0].revents & ZMQ_POLLIN){
-		zmsg_t *msg = zmsg_recv(this->socket_);
-		zframe_t *tmp = zmsg_pop(msg);
-		zframe_destroy(&tmp);
-		tmp = zmsg_pop(msg);
-		zframe_destroy(&tmp);
-		param->ParseToParam(&msg);
-		return true;
-	}
-	else return false;
-}
 } //namespace singa
-
-
-

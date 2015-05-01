@@ -61,6 +61,7 @@ class RMSPropUpdater : public Updater{
   float weight_decay_;
 };
 
+/*
 class AdaDeltaUpdater : public Updater{
  public:
   virtual void Init(const UpdaterProto& proto);
@@ -71,6 +72,7 @@ class AdaDeltaUpdater : public Updater{
   float delta_;
   float weight_decay_;
 };
+*/
 }
 
 #endif // INCLUDE_UTILS_UPDATER_H_

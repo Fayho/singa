@@ -29,11 +29,17 @@ class NeuralNet {
   /**
    * Register Layers
    */
-  static void RegistryLayers();
+  static void RegisterLayers();
   /**
-   * Register Params
+   * Setup the neural network for training, test or validation.
+   *
+   * Parameters for test/validation net can share those from training after
+   * setup (done outside of this funcion).
+   *
+   * @param np proto for the neural network.
    */
-  static void RegistryParam(string param_type);
+  static shared_ptr<NeuralNet> SetupNeuralNet(const NetProto& np, Phase phase);
+
  public:
   /**
    * construct the net structure from protocol buffer.
@@ -66,7 +72,7 @@ class NeuralNet {
   /**
    * share weights from other neuralnet
    */
-  void ShareWeights(shared_ptr<NeuralNet> other);
+  void ShareParams(shared_ptr<NeuralNet> other,int flag);
   void ToProto(NetProto *net_proto, bool copyData=false);
   const std::vector<shared_ptr<Layer>>& layers() {
     return layers_;

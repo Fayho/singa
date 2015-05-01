@@ -6,6 +6,7 @@
 using namespace singa;
 
 string folder="src/test/data/";
+/*
 ClusterProto GenClusterProto(){
   ClusterProto proto;
   int nworker=6, nserver=4;
@@ -91,3 +92,4 @@ TEST(ClusterTest, MultiServerGroups){
   ASSERT_EQ(2, cluster->nserver_groups());
   ASSERT_STREQ("awan-0-08-0", cluster->host_addr().c_str());
 }
+*/

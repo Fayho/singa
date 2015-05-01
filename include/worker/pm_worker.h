@@ -1,18 +1,18 @@
 #ifndef PARAM_CLIENT_H_
 #define PARAM_CLIENT_H_
 
-#include <czmq.h>
 #include <memory>
 #include <vector>
 #include <map>
-#include <string.h>
-#include "utils/param_shard.h"
-#include "utils/pm_base.h"
-#include "proto/topology.pb.h"
+#include <string>
+#include <atomic>
+#include "utils/param.h"
+#include "communication/msg.h"
 
 using std::string;
 using std::vector;
 using std::shared_ptr;
+using std::map;
 
 namespace singa {
 
@@ -23,17 +23,39 @@ enum RequestReturnType {
 
 #define POPULATE "put"
 #define WAIT "wait"
+class ParamCounter{
+  public:
+  ParamCounter(shared_ptr<Param> p):
+    nUpdate(0), nGet(0), nPut(0), nCollect(0), nLocal(0), nTotal(0),
+    owner_procs(-1), param(p){}
+  std::atomic<int> nUpdate, nGet, nPut, nCollect;
+  int nLocal, nTotal;
+  int owner_procs;
+  shared_ptr<Param> param;
+};
+
+typedef map<int, shared_ptr<ParamCounter>> SharedParamShard;
 
 /**
- * Parameter manager at the worker side, support get/update requests from the worker.
+ * Parameter manager at the worker side.
+ *
+ * It supports get/update requests from the worker.
  * Each worker thread has a PMClient object, these objects share the same ParamShard.
  */
-class PMClient: public PMBase {
+class PMWorker{
 public:
-	PMClient(int id, ParamShard *shard, void *socket) :
-			PMBase(id, shard, socket) {
-	}
-	~PMClient();
+
+	void Setup(int group_id, int worker_id, shared_ptr<SharedParamShard> shard);
+
+  void set_id(int group_id, int worker_id){
+    group_id_=group_id;
+    worker_id_=worker_id;
+  }
+
+  /**
+   * @return global procs id where the parameter is maintained.
+   */
+  virtual int Sharding(int param_id);
 
 	/**
 	 * Get the parameter object with key paramId. Return getReturnType:
@@ -41,23 +63,32 @@ public:
 	 * 2. If local and HandleGet() return true -> LOCAL_SUCCESS, can use *param object
 	 * 3. Local but block at HandleGet() -> LOCAL_FAIL -> to call Get() again
 	 */
-	int Get(int paramId, Param *param);
+	virtual Msg* Get(shared_ptr<Param> param, int step);
+  virtual Msg* Get(Msg** msg);
 
 	/**
 	 * Update operation, similar to Get.
 	 */
-	int Update(int paramId, Param* param);
+	virtual Msg* Update(shared_ptr<Param> param, int step);
+  virtual Msg* Update(Msg** msg);
 
 	/**
 	 * Collect a Param object returned from remote server. Return FALSE
 	 * if no object is ready.
 	 */
-	bool Collect(Param *param);
+	virtual Msg* Collect(shared_ptr<Param> param, Msg**);
+  virtual Msg* Collect(Msg** msg);
+
 
 	/**
 	 * Send put request to remote server.
 	 */
-	void Put(int paramId, Param* param);
+	virtual Msg* Put(shared_ptr<Param> param, int step);
+  virtual Msg* Put(Msg** msg);
+
+ protected:
+  int group_id_, worker_id_;
+  shared_ptr<SharedParamShard> shard_;
 };
 
 /**
@@ -74,7 +105,6 @@ public:
  * The 1st thread in Client 0 populates the servers with data (PUT request). Wait
  * for a while before starting the client thread (which does get/update
  * continuously).
- */
 class SingaClient {
 public:
 	SingaClient(int worker_id, Topology &topology, vector<string> &hosts);
@@ -96,7 +126,7 @@ private:
 	vector<char*> neighbors_;
 	ParamShard *param_shard_;
 
-	int param_to_server_id(int paramId);/**< mapping paramId to server ID */
+	int param_to_server_id(int paramId);//< mapping paramId to server ID
 };
 
 //Zthread function for the worker thread, in the global namespace.
@@ -107,6 +137,7 @@ vector<Param*> gen_random_params();
 void test_get(PMClient *client);
 void test_update(PMClient *client, vector<Param*> params);
 void test_collect(PMClient *client);
+ */
 
 } // namespace singa
 #endif /* PARAM_SERVER_H_ */

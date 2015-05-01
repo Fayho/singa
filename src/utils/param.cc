@@ -3,6 +3,8 @@
 #include <chrono>
 #include <random>
 #include "utils/param.h"
+#include "utils/factory.h"
+#include "utils/singleton.h"
 #include "mshadow/tensor.h"
 #include "utils/singleton.h"
 using namespace mshadow;
@@ -10,113 +12,123 @@ using std::vector;
 using std::string;
 namespace singa {
 
-int64_t Param::ps_handle_sync=0;
-int64_t Param::worker_gen_sync=0;
-int64_t Param::worker_handle_sync=0;
 Param::Param(){
-  owner_=this;
+  owner_=-1;
   fan_in_=0;
-  param_lock_ = zmutex_new();
 }
 
 Param::~Param(){}
 
-zmsg_t* Param::HandlePutMsg(zmsg_t** msg){
-	/*
-  char* name=zmsg_popstr(*msg);
-  CHECK(name);
-  name_=string(name);
-  delete name;
-  */
-
-  zframe_t* dataframe=zmsg_pop(*msg);
-  data_.Reshape(vector<int>{(int)(zframe_size(dataframe)/sizeof(float))});
-  memcpy(data_.mutable_cpu_data(), zframe_data(dataframe),
-          zframe_size(dataframe));
-  zframe_destroy(&dataframe);
-  zmsg_destroy(msg);
-  return nullptr;
-}
-
-zmsg_t* Param::HandleGetMsg(zmsg_t** msg){
-	/*
-  char* name=zmsg_popstr(*msg);
-  zmsg_destroy(msg);
-  CHECK_STREQ(name_.c_str(), name);
-	*/
-
-  zmsg_t* ret=zmsg_new();
-  //zmsg_addstr(ret, name);
-  zmsg_addmem(ret, data_.mutable_cpu_data(), data_.count()*sizeof(float));
-  //delete name;
-  return ret;
-}
-zmsg_t* Param::HandleSyncMsg(zmsg_t** msg){
-  int64_t start=zclock_mono();
-  char* control=zframe_strdup(zmsg_first(*msg));
-  int count;
-  sscanf(control, "%d", &count);
-  delete control;
-  zframe_t* syncframe=zmsg_next(*msg);
-  CHECK_EQ(count, data_.count());
-  CHECK_EQ(zframe_size(syncframe), count*sizeof(float));
-  float* syncptr=(float*)zframe_data(syncframe);
-  float* dptr=data_.mutable_cpu_data();
-  for(int i=0;i<count;i++){
-    dptr[i]+=syncptr[i];
-    syncptr[i]=dptr[i];
-  }
-  ps_handle_sync+=zclock_mono()-start;
-  return *msg;
-}
-zmsg_t *Param::GenSyncMsgFromWorker(float sample_ratio){
-  int64_t start=zclock_mono();
-  zmsg_t* msg=zmsg_new();
-  zmsg_addstrf(msg, "%d", data_.count());
-  zframe_t* frame=zframe_new(history_.cpu_data(), sizeof(float)*data_.count());
-  zmsg_append(msg, &frame);
-  worker_gen_sync+=zclock_mono()-start;
-  return msg;
-}
-void Param::ParseSyncMsgFromPS(zmsg_t** msg){
-  int64_t start=zclock_mono();
-  //LOG(ERROR)<<"worker sync "<<id();
-  char* control=zmsg_popstr(*msg);
-  int  count;
-  sscanf(control, "%d", &count);
-  //LOG(ERROR)<<"worker sync "<<id()<<" "<<control;
-  delete control;
-  zframe_t* psdataframe=zmsg_pop(*msg);
-  CHECK_EQ(zframe_size(psdataframe), count*sizeof(float));
-  float* psdptr=(float*)zframe_data(psdataframe);
-  float* dptr=data_.mutable_cpu_data();
-  memcpy(dptr, psdptr, sizeof(float)*data_.count());
-  zframe_destroy(&psdataframe);
-  worker_handle_sync+=zclock_mono()-start;
-  zmsg_destroy(msg);
-}
-
-//for now, replace and return the new one
-zmsg_t* Param::HandleUpdateMsg(zmsg_t **msg){
-	zmsg_t *dup = zmsg_dup(*msg);
-	this->HandlePutMsg(msg);
-	return dup;
-}
-
-zmsg_t* Param::HandleSyncMsg(zmsg_t **msg){
-	return this->HandleUpdateMsg(msg);
-}
-
-zmsg_t* Param::ParseToMsg(){
-	zmsg_t* msg=zmsg_new();
-    //zmsg_addstrf(msg,"%s", name().c_str());
-    zmsg_addmem(msg, mutable_cpu_data(), sizeof(float)*data().count());
-
+Msg* Param::GenPutMsg(void* arg){
+  char buf[256];
+  int v=*(int*)arg;
+  sprintf(buf, "%d %d %f %f", v, size(),
+      learning_rate_multiplier(), weight_decay_multiplier());
+  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
+  msg->add_frame(buf, sizeof(buf));
+  msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
 	return msg;
 }
 
-void Param::ParseToParam(zmsg_t **msg){
-	this->HandlePutMsg(msg);
+Msg* Param::GenGetMsg(void* arg){
+  char buf[10];
+  int v=*(int*)arg;
+  sprintf(buf, "%d", v);
+  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
+  msg->add_frame(buf, sizeof(buf));
+  return msg;
+}
+
+Msg* Param::GenUpdateMsg(void* arg){
+  char buf[10];
+  int v=*(int*)arg;
+  sprintf(buf, "%d", v);
+  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
+  msg->add_frame(buf, sizeof(buf));
+
+  msg->add_frame(mutable_cpu_grad(), size()*sizeof(float));
+  return msg;
+}
+
+Msg* Param::GenSyncMsg(void* arg){
+  return nullptr;
+}
+
+Msg* Param::HandlePutMsg(Msg** msg){
+  int v, size;
+  float lr, wc;
+  sscanf(static_cast<char*>((*msg)->frame_data()), "%d %d %f %f",
+      &v, &size, &lr, &wc);
+  set_version(v);
+  proto_.set_learning_rate_multiplier(lr);
+  proto_.set_weight_decay_multiplier(wc);
+  CHECK((*msg)->next_frame());
+  vector<int> shape{size};
+  data_.Reshape(shape);
+  grad_.Reshape(shape);
+  history_.Reshape(shape);
+  CHECK_EQ(size* sizeof(float), (*msg)->frame_size());
+  memcpy(data_.mutable_cpu_data(), (*msg)->frame_data(), size*sizeof(float));
+  delete (*msg);
+  *msg=nullptr;
+  return nullptr;
+}
+
+Msg* Param::HandleGetMsg(Msg** msg){
+  int v;
+  sscanf(static_cast<char*>((*msg)->frame_data()), "%d", &v);
+  CHECK_LE(v, version());
+  CHECK(!(*msg)->next_frame());
+  (*msg)->add_frame(data_.mutable_cpu_data(), sizeof(float)*size());
+  (*msg)->swap_addr();
+  return *msg;
+}
+
+int Param::ParseUpdateMsg(Msg** msg){
+  int v;
+  sscanf(static_cast<char*>((*msg)->frame_data()), "%d", &v);
+  CHECK_LE(v, version());
+  CHECK((*msg)->next_frame());
+  memcpy(mutable_cpu_grad(), (*msg)->frame_data(),(*msg)->frame_size());
+  delete (*msg);
+  *msg=nullptr;
+  return 1;
+}
+
+Msg* Param::GenUpdateResponseMsg(void* arg){
+  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
+  char buf[10];
+  sprintf(buf, "%d", version());
+  msg->add_frame(buf, strlen(buf));
+  msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
+  return msg;
+}
+
+
+Msg* Param::HandleSyncMsg(Msg** msg){
+  delete *msg;
+  *msg=nullptr;
+  return nullptr;
+}
+
+int Param::ParseSyncResponseMsg(Msg** msg){
+  delete *msg;
+  *msg=nullptr;
+  return 1;
+}
+int Param::ParsePutResponseMsg(Msg **msg){
+  return ParseSyncResponseMsg(msg);
+}
+int Param::ParseGetResponseMsg(Msg **msg){
+  int v;
+  sscanf(static_cast<char*>((*msg)->frame_data()), "%d", &v);
+  set_version(v);
+  CHECK((*msg)->next_frame());
+  memcpy(mutable_cpu_data(), (*msg)->frame_data(), (*msg)->frame_size());
+  return 1;
+}
+int Param::ParseUpdateResponseMsg(Msg **msg){
+  return ParseSyncResponseMsg(msg);
 }
 
 void Param::Setup(const ParamProto& proto, const vector<int>& shape,
@@ -124,7 +136,6 @@ void Param::Setup(const ParamProto& proto, const vector<int>& shape,
   data_.Reshape(shape);
   grad_.Reshape(shape);
   history_.Reshape(shape);
-  update_.Reshape(shape);
   proto_=proto;
   fan_in_=fan_in;
 }
@@ -169,7 +180,7 @@ void Param::Init(){
   }
 }
 
-/**************************RandomSyncParam********************************/
+/**************************RandomSyncParam********************************
 const vector<int> RandomSyncParam::RandomSample(int seed, int m, int n){
   vector<int> samples(m);
   std::mt19937 gen(seed);
@@ -209,7 +220,6 @@ zmsg_t* RandomSyncParam::HandleSyncMsg(zmsg_t** msg){
   }
   CHECK_EQ(k,count);
   CHECK_EQ(zframe_size(syncframe), count*sizeof(float));
-  ps_handle_sync+=zclock_mono()-start;
   return *msg;
 }
 
@@ -282,8 +292,9 @@ void RandomSyncParam::Init(){
   memcpy(snapshot_.mutable_cpu_data(), data_.mutable_cpu_data(),
       sizeof(float)*data_.count());
 }
+*/
 
-/***************************ElasticParam************************************/
+/***************************ElasticParam************************************
 zmsg_t* ElasticParam::HandleSyncMsg(zmsg_t** msg){
   int64_t start=zclock_mono();
   char* control=zframe_strdup(zmsg_first(*msg));
@@ -296,7 +307,6 @@ zmsg_t* ElasticParam::HandleSyncMsg(zmsg_t** msg){
   Tensor<cpu, 1> worker((float*)zframe_data(syncframe), Shape1(count));
   worker=(worker-server)*alpha;
   server+=worker;
-  ps_handle_sync+=zclock_mono()-start;
   return *msg;
 }
 
@@ -325,5 +335,5 @@ void ElasticParam::ParseSyncMsgFromPS(zmsg_t** msg){
   zmsg_destroy(msg);
   worker_handle_sync+=zclock_mono()-start;
 }
-
+*/
 }  // namespace singa

@@ -677,8 +677,8 @@ void ShardDataLayer::ComputeFeature(bool training, const vector<SLayer>& srclaye
 
 void ShardDataLayer::Setup(const LayerProto& proto,
     const vector<SLayer>& srclayers){
-  shard_= std::make_shared<shard::Shard>(proto.data_param().path(),
-      shard::Shard::kRead);
+  shard_= std::make_shared<DataShard>(proto.data_param().path(),
+      DataShard::kRead);
   string key;
   shard_->Next(&key, &sample_);
   batchsize_=proto.data_param().batchsize();

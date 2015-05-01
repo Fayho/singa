@@ -30,7 +30,7 @@ namespace singa {
  * 2. add threading to prefetch and parse records
  *
  */
-class Shard {
+class DataShard {
  public:
   enum {
     //!< read only mode used in training
@@ -49,8 +49,8 @@ class Shard {
    * @bufsize batch bufsize bytes data for every disk op (read or write),
    * default is 100MB
    */
-  Shard(std::string folder, char mode, int capacity=104857600);
-  ~Shard();
+  DataShard(std::string folder, char mode, int capacity=104857600);
+  ~DataShard();
 
   /**
    * read next tuple from the shard.

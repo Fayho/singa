@@ -23,118 +23,63 @@ class Cluster {
   static shared_ptr<Cluster> Get();
   static shared_ptr<Cluster> Get(const ClusterProto& cluster, int procs_id);
 
-  /**
-   * @return total num of server procs
-   */
-  const int nservers()const{
-    return cluster_.nservers();
-  }
-  /**
-   * @return total num of worker procs
-   */
-  const int nworkers()const {
-    return cluster_.nworkers();
-  }
+  const int nserver_groups()const{ return cluster_.nserver_groups(); }
+  const int nworker_groups()const { return cluster_.nworker_groups(); }
   int nworkers_per_group()const {return cluster_.nworkers_per_group();}
   int nservers_per_group()const {return cluster_.nservers_per_group();}
-  int nthreads_per_worker()const{return cluster_.nthreads_per_worker();}
-  int nthreads_per_server()const{return cluster_.nthreads_per_server();}
+  int nworkers_per_procs()const{return cluster_.nworkers_per_procs();}
+  int nservers_per_procs()const{return cluster_.nservers_per_procs();}
+  int nworker_groups_per_server_group() const {
+    return cluster_.nworker_groups()/cluster_.nserver_groups();
+  }
 
   /**
-   * @return true if the calling procs is a server procs, otherwise false
+   * @return true if the calling procs has server threads, otherwise false
    */
-  bool AmIServer()const {
-    return procs_id_>=nworkers()&&procs_id_<nworkers()+nservers();
+  bool has_server()const {
+    if(server_worker_separate()){
+      CHECK_LT(procs_id_, nprocs());
+      return procs_id_>=nworker_procs();
+    }else
+      return procs_id_<nserver_procs();
   }
   /**
-   * @return true if the calling procs is a worker procs, otherwise false
+   * @return true if the calling procs has worker threads.
    */
-  bool AmIWorker()const {
-    return procs_id_>=0&&procs_id_<nworkers();
+  bool has_worker()const {
+    if(server_worker_separate()){
+      return procs_id_<nworker_procs();
+    }else
+      return procs_id_<nprocs();
   }
   /**
    * @return global procs id, which starts from 0.
    */
   int procs_id()const {return procs_id_;}
-  /**
-   * @return procs id within a (worker or server) group (starts from 0).
-   */
-  int group_procs_id() const {
-    if(AmIServer())
-      return (procs_id_-nworkers())%nservers_per_group();
-    else
-      return (procs_id_)%nworkers_per_group();
+  bool server_worker_separate() const {
+    return cluster_.server_worker_separate();
+  }
+  int nworker_procs() const {
+    return nworker_groups()*nworkers_per_group()/nworkers_per_procs();
+  }
+  int nserver_procs() const {
+    return nserver_groups()*nservers_per_group()/nservers_per_procs();
+  }
+  int nprocs() const {
+    return cluster_.nprocs();
+  }
+
+  const string endpoint() const {
+    return endpoint(procs_id());
   }
   /**
-   * @return (worker or server) group id
+   * @return endpoint of the router of a procs with the specified id
    */
-  int group_id() const {
-     if(AmIServer())
-      return (procs_id_-nworkers())/nservers_per_group();
-    else
-      return (procs_id_)/nworkers_per_group();
-  }
-  /**
-   * @return num of worker groups.
-   */
-  int nworker_groups() const{return cluster_.nworkers()/nworkers_per_group();}
-  /**
-   * @return num of worker groups.
-   */
-  int nserver_groups() const{return cluster_.nservers()/nservers_per_group();}
-  /**
-   * Return the id of the worker thread within his group.
-  int group_threadid(int local_threadid)const{
-    return group_procsid()*nthreads_per_procs()+local_threadid;
-  }
-   */
-  /**
-   * @return host name
-   */
-  const string host_addr() const {
-    return hosts_.at(procs_id_);
-  }
-  /**
-   * @return host name of a procs with the specified id
-   */
-  const string host_addr(int procs_id) const {
-    CHECK_LT(procs_id, nworkers()+nservers());
+  const string endpoint(int procs_id) const {
+    CHECK_LT(procs_id, nprocs());
     CHECK_GE(procs_id, 0);
-    return hosts_.at(procs_id);
+    return endpoints_.at(procs_id);
   }
-  /**
-   * @return the host name of a server procs with specified server group id
-   * and procs id within that group
-   */
-  const string server_addr(int group_id, int group_procs_id) const{
-    CHECK_GE(group_procs_id,0);
-    CHECK_LT(group_procs_id, nservers_per_group());
-    CHECK_GE(group_id, 0);
-    CHECK_LT(group_id, nserver_groups());
-    return hosts_.at(nworkers()+group_id*nservers_per_group()+group_procs_id);
-  }
-  /*
-  const string group_thread_addr(int group_threadid) const{
-    CHECK_GE(group_threadid,0);
-    CHECK_LT(group_threadid,nthreads_per_group());
-    return addr_.at(global_procsid_+group_procsid(group_threadid));
-  }
-
-  const string pub_port() const {
-    return std::to_string(cluster_.start_port());
-  }
-
-  const int router_port() const {
-    return cluster_.start_port()+1;
-  }
-  */
-  /**
-   * pull port of Bridge layers.
-  const string pull_port(int k) const {
-    return std::to_string(cluster_.start_port()+2+k);
-  }
-   */
-  //bool synchronous()const {return cluster_.synchronous();}
   const string workspace() {return cluster_.workspace();}
   const string vis_folder(){
     return cluster_.workspace()+"/visualization";
@@ -153,7 +98,7 @@ class Cluster {
 
  private:
   int procs_id_;
-  std::vector<std::string> hosts_;
+  std::vector<std::string> endpoints_;
   // cluster config proto
   ClusterProto cluster_;
   // make this class a singlton

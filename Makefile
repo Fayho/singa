@@ -30,7 +30,10 @@ PROTO_OBJS :=$(addprefix $(BUILD_DIR)/, $(PROTO_SRCS:.cc=.o))
 # each singa src file will generate a .o file
 SINGA_SRCS := $(shell find src/ \( -path "src/test" -o -path "src/main.cc" \) -prune \
 	-o \( -name "*.cc" -type f \) -print )
-SINGA_SRCS := src/utils/cluster.cc src/utils/shard.cc src/communication/socket.cc
+#SINGA_SRCS := src/utils/cluster.cc src/utils/shard.cc src/communication/socket.cc \
+	src/utils/param.cc src/worker/pm_worker.cc src/worker/worker.cc \
+	src/server/pm_server.cc src/server/server.cc src/trainer.cc
+
 SINGA_OBJS := $(sort $(addprefix $(BUILD_DIR)/, $(SINGA_SRCS:.cc=.o)) $(PROTO_OBJS) )
 -include $(SINGA_OBJS:%.o=%.P)
 

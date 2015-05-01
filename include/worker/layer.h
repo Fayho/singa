@@ -12,7 +12,7 @@
 #include <lmdb.h>
 
 #include "proto/model.pb.h"
-#include "utils/shard.h"
+#include "utils/data_shard.h"
 #include "worker/base_layer.h"
 
 
@@ -252,7 +252,7 @@ class ShardDataLayer: public DataLayer{
   virtual void ComputeGradient(const vector<shared_ptr<Layer>>& srclayers){};
   virtual void Setup(const LayerProto& proto, const vector<SLayer>& srclayers);
  private:
-  shared_ptr<shard::Shard> shard_;
+  shared_ptr<DataShard> shard_;
 };
 class LMDBDataLayer: public DataLayer{
  public:

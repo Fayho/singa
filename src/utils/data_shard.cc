@@ -1,10 +1,10 @@
 #include <sys/stat.h>
 #include <glog/logging.h>
 
-#include "utils/shard.h"
+#include "utils/data_shard.h"
 namespace singa {
 
-Shard::Shard(std::string folder, char mode, int capacity){
+DataShard::DataShard(std::string folder, char mode, int capacity){
   struct stat sb;
   if(stat(folder.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)){
     LOG(INFO)<<"Open shard folder "<<folder;
@@ -13,15 +13,15 @@ Shard::Shard(std::string folder, char mode, int capacity){
   }
 
   path_= folder+"/shard.dat";
-  if(mode==Shard::kRead){
+  if(mode==DataShard::kRead){
     fdat_.open(path_, std::ios::in|std::ios::binary);
     CHECK(fdat_.is_open())<<"Cannot create file "<<path_;
   }
-  if(mode==Shard::kCreate){
+  if(mode==DataShard::kCreate){
     fdat_.open(path_, std::ios::binary|std::ios::out|std::ios::trunc);
     CHECK(fdat_.is_open())<<"Cannot create file "<<path_;
   }
-  if(mode==Shard::kAppend){
+  if(mode==DataShard::kAppend){
     int last_tuple=PrepareForAppend(path_);
     fdat_.open(path_, std::ios::binary|std::ios::out|std::ios::in|std::ios::ate);
     CHECK(fdat_.is_open())<<"Cannot create file "<<path_;
@@ -35,18 +35,18 @@ Shard::Shard(std::string folder, char mode, int capacity){
   buf_=new char[capacity];
 }
 
-Shard:: ~Shard(){
+DataShard::~DataShard(){
   delete buf_;
   fdat_.close();
 }
 
-bool Shard::Insert(const std::string& key, const Message& val) {
+bool DataShard::Insert(const std::string& key, const Message& val) {
   std::string str;
   val.SerializeToString(&str);
   return Insert(key, str);
 }
 // insert one complete tuple
-bool Shard::Insert(const std::string& key, const std::string& val) {
+bool DataShard::Insert(const std::string& key, const std::string& val) {
   if(keys_.find(key)!=keys_.end()||val.size()==0)
     return false;
   int size=key.size()+val.size()+2*sizeof(size_t);
@@ -67,13 +67,13 @@ bool Shard::Insert(const std::string& key, const std::string& val) {
   return true;
 }
 
-void Shard::Flush() {
+void DataShard::Flush() {
   fdat_.write(buf_, offset_);
   fdat_.flush();
   offset_=0;
 }
 
-int Shard::Next(std::string *key){
+int DataShard::Next(std::string *key){
   key->clear();
   int ssize=sizeof(size_t);
   if(!PrepareNextField(ssize))
@@ -101,7 +101,7 @@ int Shard::Next(std::string *key){
   return vallen;
 }
 
-bool Shard::Next(std::string *key, Message* val) {
+bool DataShard::Next(std::string *key, Message* val) {
   int vallen=Next(key);
   if(vallen==0)
     return false;
@@ -110,7 +110,7 @@ bool Shard::Next(std::string *key, Message* val) {
   return true;
 }
 
-bool Shard::Next(std::string *key, std::string* val) {
+bool DataShard::Next(std::string *key, std::string* val) {
   int vallen=Next(key);
   if(vallen==0)
     return false;
@@ -121,7 +121,7 @@ bool Shard::Next(std::string *key, std::string* val) {
   return true;
 }
 
-void Shard::SeekToFirst(){
+void DataShard::SeekToFirst(){
   CHECK_EQ(mode_, kRead);
   bufsize_=0;
   offset_=0;
@@ -131,7 +131,7 @@ void Shard::SeekToFirst(){
 }
 
 // if the buf does not have the next complete field, read data from disk
-bool Shard::PrepareNextField(int size){
+bool DataShard::PrepareNextField(int size){
   if(offset_+size>bufsize_){
     bufsize_-=offset_;
     CHECK_LE(bufsize_, offset_);
@@ -148,7 +148,7 @@ bool Shard::PrepareNextField(int size){
   return true;
 }
 
-const int Shard::Count() {
+const int DataShard::Count() {
   std::ifstream fin(path_, std::ios::in|std::ios::binary);
   CHECK(fdat_.is_open())<<"Cannot create file "<<path_;
   int count=0;
@@ -172,7 +172,7 @@ const int Shard::Count() {
   return count;
 }
 
-int Shard::PrepareForAppend(std::string path){
+int DataShard::PrepareForAppend(std::string path){
   std::ifstream fin(path, std::ios::in|std::ios::binary);
   if(!fin.is_open()){
     fdat_.open(path, std::ios::out|std::ios::binary);

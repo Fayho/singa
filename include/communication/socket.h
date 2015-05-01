@@ -8,11 +8,8 @@ namespace singa {
 
 class Socket{
   public:
-  /**
-    * @param args depending on the underlying implementation.
-    */
-  Socket(void* args){};
-  Socket(){};
+  Socket(){}
+  virtual ~Socket(){}
   /**
     * Send a message to connected socket(s), non-blocking. The message will
     * be deallocated after sending, thus should not be used after calling Send();
@@ -30,9 +27,12 @@ class Socket{
    * for ZeroMQ implementation and rank for MPI implementation.
    */
   virtual void* InternalID() const=0;
+
+ protected:
+  int local_id_;
 };
 
-class Poller{
+class BasePoller{
  public:
   /**
     * Add a socket for polling; Multiple sockets can be polled together by
@@ -47,8 +47,30 @@ class Poller{
     */
   virtual Socket* Poll(int timeout)=0;
 };
+
+#define USE_ZMQ
+
+#ifdef USE_ZMQ
+class Poller: public BasePoller{
+ public:
+  Poller();
+  virtual void Add(Socket* socket);
+  virtual Socket* Poll(int duration);
+ protected:
+  zpoller_t *poller_;
+  std::map<zsock_t*, Socket*> zsock2Socket_;
+};
+
+
 class Dealer : public Socket{
-  public:
+ public:
+  /*
+   * @param id local dealer ID within a procs if the dealer is from worker or
+   * server thread, starts from 1 (0 is used by the router); or the connected
+   * remote procs ID for inter-process dealers from the stub thread.
+   */
+  Dealer(int id=-1):id_(id){}
+  virtual ~Dealer();
   /**
     * Setup the connection with the router.
     *
@@ -60,20 +82,30 @@ class Dealer : public Socket{
     * format, i.e., IP:port, where IP is the connected process.
     * @return 1 connection sets up successfully; 0 otherwise
     */
-  virtual int Connect(string endpoint)=0;
-  virtual int Send(Msg* msg)=0;
-  virtual Msg* Receive()=0;
-  virtual void* InternalID() const=0;
+  virtual int Connect(string endpoint);
+  virtual int Send(Msg* msg);
+  virtual Msg* Receive();
+  virtual void* InternalID() const{
+    return dealer_;
+  }
+ protected:
+  int id_;
+  zsock_t* dealer_;
 };
 
 class Router : public Socket{
  public:
+  virtual ~Router();
   /**
    * Constructor.
+   *
+   * There is only one router per procs, hence its local id is 0 and is not set
+   * explicitly.
    *
    * @param bufsize buffer at most this number of messages
    */
   Router(int bufsize=100){
+    nBufmsg_=0;
     bufsize_=bufsize;
   }
   /**
@@ -88,42 +120,8 @@ class Router : public Socket{
   * intra-process connection.
   * @return number of connected dealers.
   */
-  virtual int Bind(string endpoint)=0;
-  virtual int Send(Msg* msg)=0;
-  virtual Msg* Receive()=0;
-  virtual void* InternalID() const=0;
- protected:
-  int bufsize_;
-};
-
-class ZMQPoller: public Poller{
- public:
-  ZMQPoller();
-  virtual void Add(Socket* socket);
-  virtual Socket* Poll(int duration);
- protected:
-  zpoller_t *poller_;
-  std::map<zsock_t*, Socket*> zsock2Socket_;
-};
-
-class ZMQDealer: public Dealer{
- public:
-  virtual~ ZMQDealer();
-  virtual int Connect(string endpoint);
-  virtual int Send(Msg* msg);
-  virtual Msg* Receive();
-  virtual void* InternalID() const{
-    return dealer_;
-  }
- protected:
-  zsock_t* dealer_;
-};
-
-class ZMQRouter: public Router{
- public:
-  virtual~ ZMQRouter();
   virtual int Bind(string endpoint);
-  /**
+ /**
    * If the destination socket has not connected yet, buffer this the message.
    */
   virtual int Send(Msg* msg);
@@ -135,9 +133,12 @@ class ZMQRouter: public Router{
   zsock_t* router_;
   std::map<int, zframe_t*> id2addr_;
   std::map<int, std::vector<zmsg_t*>> bufmsg_;
-  int nBufmsg_;
+  int nBufmsg_, bufsize_;
 };
 
+#elif USE_MPI
+vector<shared_ptr<SafeQueue>> MPIQueues;
+#endif
 } /* singa */
 
 #endif // INCLUDE_COMMUNICATION_SOCKET_H_

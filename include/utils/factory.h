@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <utility>
+#include <map>
 /**
  * macro that creats a function which instantiate a subclass instance and
  * returns pointer to the base class.

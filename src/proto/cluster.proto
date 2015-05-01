@@ -1,14 +1,16 @@
 package singa;
 
 message ClusterProto{
-  optional int32 nworkers=1;
-  optional int32 nservers=2;
+  optional int32 nworker_groups=1;
+  optional int32 nserver_groups=2;
   optional string hostfile=3;
+  optional bool server_worker_separate=4 [default=false];
   // partition workers into groups based on ID,
   optional int32 nworkers_per_group=5 [default=1];
   optional int32 nservers_per_group=6 [default=1];
-  optional int32 nthreads_per_worker=7 [default=1];
-  optional int32 nthreads_per_server=8 [default=1];
+  optional int32 nworkers_per_procs=7 [default=1];
+  optional int32 nservers_per_procs=8 [default=1];
+  optional int32 nprocs=9;
 
   // local workspace, train/val/test shards, checkpoint files
   required string workspace=11;
