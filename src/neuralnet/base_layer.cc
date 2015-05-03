@@ -3,7 +3,7 @@
 #include <cblas.h>
 #include <math.h>
 #include <cfloat>
-#include "worker/base_layer.h"
+#include "neuralnet/base_layer.h"
 namespace singa {
 /*****************************************************************************
  * Implementation for Layer

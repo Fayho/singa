@@ -1,4 +1,4 @@
-SINGA
+Apache SINGA
 =====
 
 Distributed deep learning system

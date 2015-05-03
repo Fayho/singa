@@ -1,16 +1,10 @@
-/*
- * pm_client.cc
- *
- *  Created on: Mar 16, 2015
- *      Author: dinhtta
- */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "gflags/gflags.h"
 #include <glog/logging.h>
 #include "proto/model.pb.h"
-#include "worker/pm_worker.h"
+#include "trainer/pm_worker.h"
 #include "mshadow/tensor.h"
 #include "utils/cluster.h"
 
@@ -18,7 +12,7 @@
 namespace singa{
 
 void PMWorker::Setup(int group_id, int worker_id,
-    shared_ptr<SharedParamShard> shard){
+    shared_ptr<ParamShard> shard){
   group_id_=group_id;
   worker_id_=worker_id;
   shard_=shard;
@@ -49,6 +43,7 @@ Msg* PMWorker::Put(Msg** msg){
 }
 
 Msg* PMWorker::Put(shared_ptr<Param> param, int step){
+  param->set_version(step);
   // only owner can put shared parameter
   if(param->owner()<0||param->owner()==param->id()){
     Msg* msg= param->GenPutMsg(&step);
@@ -67,6 +62,7 @@ Msg* PMWorker::Get(Msg** msg){
 }
 
 Msg* PMWorker::Get(shared_ptr<Param> param, int step){
+  param->set_version(step);
   bool send=false;
   int id=param->id();
   shared_ptr<ParamCounter> entry=nullptr;
@@ -77,7 +73,6 @@ Msg* PMWorker::Get(shared_ptr<Param> param, int step){
   }
   if(param->owner()<0||send){
     Msg* msg=nullptr;
-    msg->set_src(group_id_, worker_id_, kWorkerParam);
     if(param->owner()<0){
       msg=param->GenGetMsg(&step);
       msg->set_dst(group_id_/Cluster::Get()->nworker_groups_per_server_group(),
@@ -86,6 +81,7 @@ Msg* PMWorker::Get(shared_ptr<Param> param, int step){
       msg=entry->param->GenGetMsg(&step);
       msg->set_dst(entry->owner_procs,kStub);
     }
+    msg->set_src(group_id_, worker_id_, kWorkerParam);
     msg->set_type(kGet);
     msg->set_target(id);
     return msg;
@@ -97,6 +93,7 @@ Msg* PMWorker::Update(Msg** msg){
   return *msg;
 }
 Msg* PMWorker::Update(shared_ptr<Param> param, int step){
+  param->set_version(step);
   bool send=false;
   int id=param->id();
   shared_ptr<ParamCounter> entry;
@@ -129,15 +126,6 @@ Msg* PMWorker::Update(shared_ptr<Param> param, int step){
 }
 
 Msg* PMWorker::Collect(Msg** msg){
-  return *msg;
-}
-
-Msg* PMWorker::Collect(shared_ptr<Param> param, Msg** msg){
-  auto p=param;
-  if(param->owner()>=0){
-    auto entry=shard_->at(param->id());
-    p=entry->param;
-  }
   int id=(*msg)->target();
   int type=(*msg)->type();
   auto pp=shard_->at(id)->param;
@@ -146,10 +134,9 @@ Msg* PMWorker::Collect(shared_ptr<Param> param, Msg** msg){
   }else if(type==kRUpdate){
     pp->ParseUpdateResponseMsg(msg);
   }
-  if(param->owner()>=0){
+  if(pp->owner()>=0){
     // forwarding to workers on other procs
   }
-  param->set_version(p->version());
   delete (*msg);
   *msg=nullptr;
   return nullptr;

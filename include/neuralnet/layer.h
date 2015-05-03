@@ -13,7 +13,7 @@
 
 #include "proto/model.pb.h"
 #include "utils/data_shard.h"
-#include "worker/base_layer.h"
+#include "neuralnet/base_layer.h"
 
 
 /**

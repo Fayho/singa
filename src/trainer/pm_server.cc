@@ -1,6 +1,6 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
-#include "server/pm_server.h"
+#include "trainer/pm_server.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
 #include <vector>
@@ -58,13 +58,18 @@ Msg* PMServer::HandleUpdate(Msg **msg) {
   if(shard_->find(id)!=shard_->end()){
 		//repsonse of the format: <identity><type: kData><paramId><param content>
     param=shard_->at(id);
-    Msg* tmp=static_cast<Msg*>((*msg)->CopyHeader());
+    Msg* tmp=static_cast<Msg*>((*msg)->CopyAddr());
     param->ParseUpdateMsg(msg);
     updater_->Update(param->version(), param);
+    param->set_version(param->version()+1);
     auto response=param->GenUpdateResponseMsg();
-    tmp->swap_addr();
-    response->SetHeader(tmp);
+    tmp->SwapAddr();
+    response->SetAddr(tmp);
+    delete tmp;
+    return response;
 	} else {
+    LOG(ERROR)<<"Param ("<<id<<") is not maintained by server ("<<group_id_
+      <<", "<<server_id_<<")";
 		//re-construct msg to be re-queued.
 		return *msg;
 	}

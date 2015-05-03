@@ -37,7 +37,7 @@ class Param {
   /*
    * fill the data according to initmethod, i.e., random/gaussian/fixed value
    */
-  virtual void Init();
+  virtual void Init(int v=0);
   void ShareData(shared_ptr<Param> other){
     owner_=other->id();
     CHECK(std::equal(data_.shape().begin(), data_.shape().end(),
@@ -74,12 +74,11 @@ class Param {
   }
 
   int version() const {
-    return proto_.version();
+    return proto_.version(); // TODO store version in data blob
   }
   void set_version(int v) {
-    proto_.set_version(v);
+    proto_.set_version(v); // TODO read version from data blob
   }
-
    /**
     * @return num of floats.
     */
@@ -133,7 +132,6 @@ class Param {
   ParamProto proto_;
   int fan_in_;
 };
-
 /**
  * Sync with server by randomly sampling some parameters for every sync.
 class RandomSyncParam: public Param{

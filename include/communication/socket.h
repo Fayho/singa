@@ -2,10 +2,10 @@
 #define INCLUDE_COMMUNICATION_SOCKET_H_
 #include <map>
 #include <vector>
-#include <czmq.h>
 #include "communication/msg.h"
 namespace singa {
 
+const string kInprocRouterEndpoint="inproc://router";
 class Socket{
   public:
   Socket(){}
@@ -19,6 +19,7 @@ class Socket{
   virtual int Send(Msg* msg)=0;
   /**
     * Receive a message from any connected socket.
+    *
     * @return a message pointer if success; nullptr if failure
     */
   virtual Msg* Receive()=0;
@@ -41,26 +42,26 @@ class BasePoller{
   virtual void Add(Socket* socket)=0;
   /**
     * Poll for all sockets added into this poller.
-    * @param timeout stop after this number of milliseconds
+    * @param timeout stop after this number of mseconds
     * @return pointer to the socket if it has one message in the receiving
     * queue; nullptr if no message in any sockets,
     */
-  virtual Socket* Poll(int timeout)=0;
+  virtual Socket* Wait(int timeout)=0;
 };
 
 #define USE_ZMQ
+#include <czmq.h>
 
 #ifdef USE_ZMQ
 class Poller: public BasePoller{
  public:
   Poller();
   virtual void Add(Socket* socket);
-  virtual Socket* Poll(int duration);
+  virtual Socket* Wait(int duration);
  protected:
   zpoller_t *poller_;
   std::map<zsock_t*, Socket*> zsock2Socket_;
 };
-
 
 class Dealer : public Socket{
  public:
@@ -69,7 +70,7 @@ class Dealer : public Socket{
    * server thread, starts from 1 (0 is used by the router); or the connected
    * remote procs ID for inter-process dealers from the stub thread.
    */
-  Dealer(int id=-1):id_(id){}
+  Dealer(int id=-1);
   virtual ~Dealer();
   /**
     * Setup the connection with the router.
@@ -91,6 +92,7 @@ class Dealer : public Socket{
  protected:
   int id_;
   zsock_t* dealer_;
+  zpoller_t* poller_;
 };
 
 class Router : public Socket{
@@ -104,11 +106,8 @@ class Router : public Socket{
    *
    * @param bufsize buffer at most this number of messages
    */
-  Router(int bufsize=100){
-    nBufmsg_=0;
-    bufsize_=bufsize;
-  }
-  /**
+  Router(int bufsize=100);
+ /**
   * Setup the connection with dealers.
   *
   * It automatically binds to the endpoint for intra-process communication,
@@ -131,6 +130,7 @@ class Router : public Socket{
   }
  protected:
   zsock_t* router_;
+  zpoller_t* poller_;
   std::map<int, zframe_t*> id2addr_;
   std::map<int, std::vector<zmsg_t*>> bufmsg_;
   int nBufmsg_, bufsize_;

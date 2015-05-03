@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "proto/model.pb.h"
-#include "worker/layer.h"
+#include "neuralnet/layer.h"
 #include "utils/factory.h"
 #include "utils/graph.h"
 

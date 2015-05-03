@@ -544,6 +544,13 @@ class ModelProto : public ::google::protobuf::Message {
   inline ::singa::ModelProto_GradCalcAlg alg() const;
   inline void set_alg(::singa::ModelProto_GradCalcAlg value);
 
+  // optional bool hogwild = 33 [default = false];
+  inline bool has_hogwild() const;
+  inline void clear_hogwild();
+  static const int kHogwildFieldNumber = 33;
+  inline bool hogwild() const;
+  inline void set_hogwild(bool value);
+
   // optional .singa.NetProto neuralnet = 40;
   inline bool has_neuralnet() const;
   inline void clear_neuralnet();
@@ -600,6 +607,8 @@ class ModelProto : public ::google::protobuf::Message {
   inline void clear_has_updater();
   inline void set_has_alg();
   inline void clear_has_alg();
+  inline void set_has_hogwild();
+  inline void clear_has_hogwild();
   inline void set_has_neuralnet();
   inline void clear_has_neuralnet();
   inline void set_has_debug();
@@ -626,14 +635,15 @@ class ModelProto : public ::google::protobuf::Message {
   ::google::protobuf::int32 validation_steps_;
   ::google::protobuf::int32 test_steps_;
   ::google::protobuf::int32 step_;
+  ::singa::UpdaterProto* updater_;
   bool prefetch_;
+  bool hogwild_;
   bool debug_;
   int alg_;
-  ::singa::UpdaterProto* updater_;
   ::singa::NetProto* neuralnet_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(21 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(22 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -3462,13 +3472,6 @@ class UpdaterProto : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // optional bool hogwild = 2 [default = true];
-  inline bool has_hogwild() const;
-  inline void clear_hogwild();
-  static const int kHogwildFieldNumber = 2;
-  inline bool hogwild() const;
-  inline void set_hogwild(bool value);
-
   // optional float momentum = 4 [default = 0];
   inline bool has_momentum() const;
   inline void clear_momentum();
@@ -3598,8 +3601,6 @@ class UpdaterProto : public ::google::protobuf::Message {
 
   // @@protoc_insertion_point(class_scope:singa.UpdaterProto)
  private:
-  inline void set_has_hogwild();
-  inline void clear_has_hogwild();
   inline void set_has_momentum();
   inline void clear_has_momentum();
   inline void set_has_weight_decay();
@@ -3631,7 +3632,6 @@ class UpdaterProto : public ::google::protobuf::Message {
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
-  bool hogwild_;
   float momentum_;
   float weight_decay_;
   float gamma_;
@@ -3644,14 +3644,14 @@ class UpdaterProto : public ::google::protobuf::Message {
   int learning_rate_change_method_;
   ::google::protobuf::int32 sync_frequency_;
   ::google::protobuf::int32 warmup_steps_;
-  float moving_rate_;
   ::std::string* param_type_;
   static ::std::string* _default_param_type_;
   ::google::protobuf::RepeatedField< ::google::protobuf::int32 > step_;
   ::google::protobuf::RepeatedField< float > step_lr_;
+  float moving_rate_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(17 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(16 + 31) / 32];
 
   friend void  protobuf_AddDesc_model_2eproto();
   friend void protobuf_AssignDesc_model_2eproto();
@@ -4434,15 +4434,37 @@ inline void ModelProto::set_alg(::singa::ModelProto_GradCalcAlg value) {
   alg_ = value;
 }
 
-// optional .singa.NetProto neuralnet = 40;
-inline bool ModelProto::has_neuralnet() const {
+// optional bool hogwild = 33 [default = false];
+inline bool ModelProto::has_hogwild() const {
   return (_has_bits_[0] & 0x00080000u) != 0;
 }
-inline void ModelProto::set_has_neuralnet() {
+inline void ModelProto::set_has_hogwild() {
   _has_bits_[0] |= 0x00080000u;
 }
-inline void ModelProto::clear_has_neuralnet() {
+inline void ModelProto::clear_has_hogwild() {
   _has_bits_[0] &= ~0x00080000u;
+}
+inline void ModelProto::clear_hogwild() {
+  hogwild_ = false;
+  clear_has_hogwild();
+}
+inline bool ModelProto::hogwild() const {
+  return hogwild_;
+}
+inline void ModelProto::set_hogwild(bool value) {
+  set_has_hogwild();
+  hogwild_ = value;
+}
+
+// optional .singa.NetProto neuralnet = 40;
+inline bool ModelProto::has_neuralnet() const {
+  return (_has_bits_[0] & 0x00100000u) != 0;
+}
+inline void ModelProto::set_has_neuralnet() {
+  _has_bits_[0] |= 0x00100000u;
+}
+inline void ModelProto::clear_has_neuralnet() {
+  _has_bits_[0] &= ~0x00100000u;
 }
 inline void ModelProto::clear_neuralnet() {
   if (neuralnet_ != NULL) neuralnet_->::singa::NetProto::Clear();
@@ -4474,13 +4496,13 @@ inline void ModelProto::set_allocated_neuralnet(::singa::NetProto* neuralnet) {
 
 // optional bool debug = 41 [default = false];
 inline bool ModelProto::has_debug() const {
-  return (_has_bits_[0] & 0x00100000u) != 0;
+  return (_has_bits_[0] & 0x00200000u) != 0;
 }
 inline void ModelProto::set_has_debug() {
-  _has_bits_[0] |= 0x00100000u;
+  _has_bits_[0] |= 0x00200000u;
 }
 inline void ModelProto::clear_has_debug() {
-  _has_bits_[0] &= ~0x00100000u;
+  _has_bits_[0] &= ~0x00200000u;
 }
 inline void ModelProto::clear_debug() {
   debug_ = false;
@@ -7529,37 +7551,15 @@ SingleLabelImageRecord::mutable_data() {
 
 // UpdaterProto
 
-// optional bool hogwild = 2 [default = true];
-inline bool UpdaterProto::has_hogwild() const {
-  return (_has_bits_[0] & 0x00000001u) != 0;
-}
-inline void UpdaterProto::set_has_hogwild() {
-  _has_bits_[0] |= 0x00000001u;
-}
-inline void UpdaterProto::clear_has_hogwild() {
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline void UpdaterProto::clear_hogwild() {
-  hogwild_ = true;
-  clear_has_hogwild();
-}
-inline bool UpdaterProto::hogwild() const {
-  return hogwild_;
-}
-inline void UpdaterProto::set_hogwild(bool value) {
-  set_has_hogwild();
-  hogwild_ = value;
-}
-
 // optional float momentum = 4 [default = 0];
 inline bool UpdaterProto::has_momentum() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
+  return (_has_bits_[0] & 0x00000001u) != 0;
 }
 inline void UpdaterProto::set_has_momentum() {
-  _has_bits_[0] |= 0x00000002u;
+  _has_bits_[0] |= 0x00000001u;
 }
 inline void UpdaterProto::clear_has_momentum() {
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000001u;
 }
 inline void UpdaterProto::clear_momentum() {
   momentum_ = 0;
@@ -7575,13 +7575,13 @@ inline void UpdaterProto::set_momentum(float value) {
 
 // optional float weight_decay = 5 [default = 0];
 inline bool UpdaterProto::has_weight_decay() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000002u) != 0;
 }
 inline void UpdaterProto::set_has_weight_decay() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000002u;
 }
 inline void UpdaterProto::clear_has_weight_decay() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000002u;
 }
 inline void UpdaterProto::clear_weight_decay() {
   weight_decay_ = 0;
@@ -7597,13 +7597,13 @@ inline void UpdaterProto::set_weight_decay(float value) {
 
 // optional float gamma = 6 [default = 1];
 inline bool UpdaterProto::has_gamma() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000004u) != 0;
 }
 inline void UpdaterProto::set_has_gamma() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000004u;
 }
 inline void UpdaterProto::clear_has_gamma() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline void UpdaterProto::clear_gamma() {
   gamma_ = 1;
@@ -7619,13 +7619,13 @@ inline void UpdaterProto::set_gamma(float value) {
 
 // optional float pow = 7 [default = 0];
 inline bool UpdaterProto::has_pow() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
+  return (_has_bits_[0] & 0x00000008u) != 0;
 }
 inline void UpdaterProto::set_has_pow() {
-  _has_bits_[0] |= 0x00000010u;
+  _has_bits_[0] |= 0x00000008u;
 }
 inline void UpdaterProto::clear_has_pow() {
-  _has_bits_[0] &= ~0x00000010u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline void UpdaterProto::clear_pow() {
   pow_ = 0;
@@ -7641,13 +7641,13 @@ inline void UpdaterProto::set_pow(float value) {
 
 // optional float delta = 8 [default = 1e-07];
 inline bool UpdaterProto::has_delta() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
+  return (_has_bits_[0] & 0x00000010u) != 0;
 }
 inline void UpdaterProto::set_has_delta() {
-  _has_bits_[0] |= 0x00000020u;
+  _has_bits_[0] |= 0x00000010u;
 }
 inline void UpdaterProto::clear_has_delta() {
-  _has_bits_[0] &= ~0x00000020u;
+  _has_bits_[0] &= ~0x00000010u;
 }
 inline void UpdaterProto::clear_delta() {
   delta_ = 1e-07f;
@@ -7663,13 +7663,13 @@ inline void UpdaterProto::set_delta(float value) {
 
 // optional float rho = 9 [default = 0.9];
 inline bool UpdaterProto::has_rho() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
+  return (_has_bits_[0] & 0x00000020u) != 0;
 }
 inline void UpdaterProto::set_has_rho() {
-  _has_bits_[0] |= 0x00000040u;
+  _has_bits_[0] |= 0x00000020u;
 }
 inline void UpdaterProto::clear_has_rho() {
-  _has_bits_[0] &= ~0x00000040u;
+  _has_bits_[0] &= ~0x00000020u;
 }
 inline void UpdaterProto::clear_rho() {
   rho_ = 0.9f;
@@ -7685,13 +7685,13 @@ inline void UpdaterProto::set_rho(float value) {
 
 // optional float base_learning_rate = 12;
 inline bool UpdaterProto::has_base_learning_rate() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
+  return (_has_bits_[0] & 0x00000040u) != 0;
 }
 inline void UpdaterProto::set_has_base_learning_rate() {
-  _has_bits_[0] |= 0x00000080u;
+  _has_bits_[0] |= 0x00000040u;
 }
 inline void UpdaterProto::clear_has_base_learning_rate() {
-  _has_bits_[0] &= ~0x00000080u;
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void UpdaterProto::clear_base_learning_rate() {
   base_learning_rate_ = 0;
@@ -7707,13 +7707,13 @@ inline void UpdaterProto::set_base_learning_rate(float value) {
 
 // optional float final_learning_rate = 13;
 inline bool UpdaterProto::has_final_learning_rate() const {
-  return (_has_bits_[0] & 0x00000100u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void UpdaterProto::set_has_final_learning_rate() {
-  _has_bits_[0] |= 0x00000100u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void UpdaterProto::clear_has_final_learning_rate() {
-  _has_bits_[0] &= ~0x00000100u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void UpdaterProto::clear_final_learning_rate() {
   final_learning_rate_ = 0;
@@ -7729,13 +7729,13 @@ inline void UpdaterProto::set_final_learning_rate(float value) {
 
 // optional int32 learning_rate_change_frequency = 14;
 inline bool UpdaterProto::has_learning_rate_change_frequency() const {
-  return (_has_bits_[0] & 0x00000200u) != 0;
+  return (_has_bits_[0] & 0x00000100u) != 0;
 }
 inline void UpdaterProto::set_has_learning_rate_change_frequency() {
-  _has_bits_[0] |= 0x00000200u;
+  _has_bits_[0] |= 0x00000100u;
 }
 inline void UpdaterProto::clear_has_learning_rate_change_frequency() {
-  _has_bits_[0] &= ~0x00000200u;
+  _has_bits_[0] &= ~0x00000100u;
 }
 inline void UpdaterProto::clear_learning_rate_change_frequency() {
   learning_rate_change_frequency_ = 0;
@@ -7751,13 +7751,13 @@ inline void UpdaterProto::set_learning_rate_change_frequency(::google::protobuf:
 
 // optional .singa.UpdaterProto.ChangeProto learning_rate_change_method = 16 [default = kFixed];
 inline bool UpdaterProto::has_learning_rate_change_method() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
+  return (_has_bits_[0] & 0x00000200u) != 0;
 }
 inline void UpdaterProto::set_has_learning_rate_change_method() {
-  _has_bits_[0] |= 0x00000400u;
+  _has_bits_[0] |= 0x00000200u;
 }
 inline void UpdaterProto::clear_has_learning_rate_change_method() {
-  _has_bits_[0] &= ~0x00000400u;
+  _has_bits_[0] &= ~0x00000200u;
 }
 inline void UpdaterProto::clear_learning_rate_change_method() {
   learning_rate_change_method_ = 0;
@@ -7774,13 +7774,13 @@ inline void UpdaterProto::set_learning_rate_change_method(::singa::UpdaterProto_
 
 // optional int32 sync_frequency = 17 [default = 1];
 inline bool UpdaterProto::has_sync_frequency() const {
-  return (_has_bits_[0] & 0x00000800u) != 0;
+  return (_has_bits_[0] & 0x00000400u) != 0;
 }
 inline void UpdaterProto::set_has_sync_frequency() {
-  _has_bits_[0] |= 0x00000800u;
+  _has_bits_[0] |= 0x00000400u;
 }
 inline void UpdaterProto::clear_has_sync_frequency() {
-  _has_bits_[0] &= ~0x00000800u;
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline void UpdaterProto::clear_sync_frequency() {
   sync_frequency_ = 1;
@@ -7796,13 +7796,13 @@ inline void UpdaterProto::set_sync_frequency(::google::protobuf::int32 value) {
 
 // optional int32 warmup_steps = 25 [default = 10];
 inline bool UpdaterProto::has_warmup_steps() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
+  return (_has_bits_[0] & 0x00000800u) != 0;
 }
 inline void UpdaterProto::set_has_warmup_steps() {
-  _has_bits_[0] |= 0x00001000u;
+  _has_bits_[0] |= 0x00000800u;
 }
 inline void UpdaterProto::clear_has_warmup_steps() {
-  _has_bits_[0] &= ~0x00001000u;
+  _has_bits_[0] &= ~0x00000800u;
 }
 inline void UpdaterProto::clear_warmup_steps() {
   warmup_steps_ = 10;
@@ -7818,13 +7818,13 @@ inline void UpdaterProto::set_warmup_steps(::google::protobuf::int32 value) {
 
 // optional float moving_rate = 26 [default = 0];
 inline bool UpdaterProto::has_moving_rate() const {
-  return (_has_bits_[0] & 0x00002000u) != 0;
+  return (_has_bits_[0] & 0x00001000u) != 0;
 }
 inline void UpdaterProto::set_has_moving_rate() {
-  _has_bits_[0] |= 0x00002000u;
+  _has_bits_[0] |= 0x00001000u;
 }
 inline void UpdaterProto::clear_has_moving_rate() {
-  _has_bits_[0] &= ~0x00002000u;
+  _has_bits_[0] &= ~0x00001000u;
 }
 inline void UpdaterProto::clear_moving_rate() {
   moving_rate_ = 0;
@@ -7840,13 +7840,13 @@ inline void UpdaterProto::set_moving_rate(float value) {
 
 // optional string param_type = 27 [default = "Param"];
 inline bool UpdaterProto::has_param_type() const {
-  return (_has_bits_[0] & 0x00004000u) != 0;
+  return (_has_bits_[0] & 0x00002000u) != 0;
 }
 inline void UpdaterProto::set_has_param_type() {
-  _has_bits_[0] |= 0x00004000u;
+  _has_bits_[0] |= 0x00002000u;
 }
 inline void UpdaterProto::clear_has_param_type() {
-  _has_bits_[0] &= ~0x00004000u;
+  _has_bits_[0] &= ~0x00002000u;
 }
 inline void UpdaterProto::clear_param_type() {
   if (param_type_ != _default_param_type_) {

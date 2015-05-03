@@ -4,7 +4,7 @@
 #include <iostream>
 #include "utils/singleton.h"
 #include "utils/factory.h"
-#include "worker/worker.h"
+#include "trainer/worker.h"
 #include "proto/model.pb.h"
 using std::thread;
 namespace singa {
@@ -14,33 +14,43 @@ Worker::Worker( int group_id, int worker_id):
 
 void Worker::Setup(const ModelProto& model,
     shared_ptr<NeuralNet> train_net,
-    shared_ptr<SharedParamShard> shard,
+    shared_ptr<PMWorker::ParamShard> shard,
     shared_ptr<Dealer> layer_dealer,
     shared_ptr<Dealer> param_dealer){
+  train_net_=train_net;
   modelproto_=model;
   layer_dealer_=layer_dealer;
   param_dealer_=param_dealer;
+  if(layer_dealer_!=nullptr)
+    layer_poller_.Add(layer_dealer_.get());
+  if(param_dealer_!=nullptr)
+    param_poller_.Add(param_dealer_.get());
   pmworker_=shared_ptr<PMWorker>(Singleton<Factory<PMWorker>>::Instance()
       ->Create("PMWorker"));
   pmworker_->Setup(group_id_, worker_id_, shard);
   step_=modelproto_.step();
   // init params
-  for(auto layer: train_net->layers()){
+  for(auto layer: train_net->layers())
     if(group_id_==0&&layer->locationid()==worker_id_)
       for(auto param: layer->GetParams()){
-        Put(param, step_);
+        if(param->owner()<0||param->owner()==param->id()){
+          param->Init();
+          Put(param, step_);
+        }
+        Get(param, step_);
       }
-    for(auto param: layer->GetParams())
-      Get(param, step_);
-  }
 }
 
 void Worker::Run(){
   step_=modelproto_.step();
   Performance perf(train_net_);
-  while(!StopNow(step_)){
-    RunOneBatch(step_, &perf);
-    step_++;
+  try{
+    while(!StopNow(step_)){
+      RunOneBatch(step_, &perf);
+      step_++;
+    }
+  }catch(WorkerException& e){
+    LOG(ERROR)<<e.what();
   }
 }
 int Worker::Put(shared_ptr<Param> param, int step){
@@ -50,9 +60,11 @@ int Worker::Put(shared_ptr<Param> param, int step){
   return 1;
 }
 int Worker::Get(shared_ptr<Param> param, int step){
-  auto msg=pmworker_->Get(param, step);
-  if(msg!=nullptr)
-    param_dealer_->Send(msg);
+  if(param->version()<step){
+    auto msg=pmworker_->Get(param, step);
+    if(msg!=nullptr)
+      param_dealer_->Send(msg);
+  }
   return 1;
 }
 int Worker::Update(shared_ptr<Param> param, int step){
@@ -64,7 +76,9 @@ int Worker::Update(shared_ptr<Param> param, int step){
 int Worker::Collect(shared_ptr<Param> param, int step){
   while(param->version()<step){
     Msg* msg=param_dealer_->Receive();
-    pmworker_->Collect(param, &msg);
+    if(msg==nullptr)
+      return 0;
+    pmworker_->Collect(&msg);
   }
   return 1;
 }
@@ -155,7 +169,9 @@ void BPWorker::Forward(shared_ptr<NeuralNet> net, int step,  bool training){
       }
       if(training){
         for(shared_ptr<Param> p: layer->GetParams()){
-          Collect(p, step);
+          if(Collect(p, step)==0){
+            throw WorkerException();
+          }
         }
       }
       layer->ComputeFeature(training);
@@ -190,7 +206,7 @@ void BPWorker::Backward(shared_ptr<NeuralNet> net, int step){
               p->data().asum_data(), p->grad().asum_data());
       }
       for(shared_ptr<Param> p: layer->GetParams()){
-        pmworker_->Update(p, step);
+        Update(p, step);
       }
       if(layer->is_bridgedstlayer()){
         // send grad blobs

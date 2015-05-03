@@ -25,8 +25,6 @@ class BaseMsg{
   virtual int dst_group_id() const=0;
   virtual int src_id() const=0;
   virtual int dst_id() const=0;
-  virtual int src_procs_id() const=0;
-  virtual int dst_procs_id() const=0;
   virtual int src_flag() const=0;
   virtual int dst_flag() const=0;
   virtual void set_type(int type)=0;
@@ -34,9 +32,15 @@ class BaseMsg{
   virtual void set_target(int target)=0;
   virtual int target() const=0;
 
-  virtual BaseMsg* CopyHeader()=0;
-  virtual void SetHeader(BaseMsg* msg)=0;
+  /**
+   * Copy src and dst address, including group_id, id, flag
+   */
+  virtual BaseMsg* CopyAddr()=0;
+  virtual void SetAddr(BaseMsg* msg)=0;
 
+  /**
+   * Add a frame (a chunck of bytes) into the message
+   */
   virtual void add_frame(const void*, int nBytes)=0;
   virtual int frame_size()=0;
   virtual void* frame_data()=0;
@@ -46,8 +50,11 @@ class BaseMsg{
     */
   virtual bool next_frame()=0;
 };
-#define USE_
-#ifdef USE_
+
+// TODO make it a compiler argument
+#define USE_ZMQ
+
+#ifdef USE_ZMQ
 class Msg : public BaseMsg{
  public:
   Msg() {
@@ -100,14 +107,8 @@ class Msg : public BaseMsg{
     int ret=dst_&kMask2;
     return ret;
   }
-  virtual int src_procs_id() const {
-    return src_group_id();
-  }
-  virtual int dst_procs_id() const {
-    return dst_group_id();
-  }
 
-  void swap_addr(){
+  void SwapAddr(){
     std::swap(src_,dst_);
   }
 
@@ -115,7 +116,8 @@ class Msg : public BaseMsg{
     target_=(type<<kOff3)|(target_&kMask3);
   }
   virtual void set_target(int target){
-    target_=(target_|kMask3)&(target);
+    target_=(target_>>kOff3)<<kOff3;
+    target_=target_|target;
   }
   virtual int type() const{
     int ret=target_>>kOff3;
@@ -126,14 +128,14 @@ class Msg : public BaseMsg{
     return ret;
   }
 
-  virtual BaseMsg* CopyHeader(){
+  virtual BaseMsg* CopyAddr(){
     Msg* msg=new Msg();
     msg->src_=src_;
     msg->dst_=dst_;
     return msg;
   }
 
-  virtual void SetHeader(BaseMsg* msg){
+  virtual void SetAddr(BaseMsg* msg){
     src_=(static_cast<Msg*>(msg))->src_;
     dst_=(static_cast<Msg*>(msg))->dst_;
   }

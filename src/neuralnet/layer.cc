@@ -5,7 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "mshadow/tensor.h"
 #include "mshadow/cxxnet_op.h"
-#include "worker/layer.h"
+#include "neuralnet/layer.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
 

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <queue>
 
-#include "worker/neuralnet.h"
+#include "neuralnet/neuralnet.h"
 #include "utils/singleton.h"
 #include "utils/factory.h"
 #include "utils/graph.h"

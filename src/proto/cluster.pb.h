@@ -106,10 +106,38 @@ class ClusterProto : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 nserver_groups() const;
   inline void set_nserver_groups(::google::protobuf::int32 value);
 
-  // optional string hostfile = 3;
+  // optional int32 nworkers_per_group = 3 [default = 1];
+  inline bool has_nworkers_per_group() const;
+  inline void clear_nworkers_per_group();
+  static const int kNworkersPerGroupFieldNumber = 3;
+  inline ::google::protobuf::int32 nworkers_per_group() const;
+  inline void set_nworkers_per_group(::google::protobuf::int32 value);
+
+  // optional int32 nservers_per_group = 4 [default = 1];
+  inline bool has_nservers_per_group() const;
+  inline void clear_nservers_per_group();
+  static const int kNserversPerGroupFieldNumber = 4;
+  inline ::google::protobuf::int32 nservers_per_group() const;
+  inline void set_nservers_per_group(::google::protobuf::int32 value);
+
+  // optional int32 nworkers_per_procs = 5 [default = 1];
+  inline bool has_nworkers_per_procs() const;
+  inline void clear_nworkers_per_procs();
+  static const int kNworkersPerProcsFieldNumber = 5;
+  inline ::google::protobuf::int32 nworkers_per_procs() const;
+  inline void set_nworkers_per_procs(::google::protobuf::int32 value);
+
+  // optional int32 nservers_per_procs = 6 [default = 1];
+  inline bool has_nservers_per_procs() const;
+  inline void clear_nservers_per_procs();
+  static const int kNserversPerProcsFieldNumber = 6;
+  inline ::google::protobuf::int32 nservers_per_procs() const;
+  inline void set_nservers_per_procs(::google::protobuf::int32 value);
+
+  // optional string hostfile = 10;
   inline bool has_hostfile() const;
   inline void clear_hostfile();
-  static const int kHostfileFieldNumber = 3;
+  static const int kHostfileFieldNumber = 10;
   inline const ::std::string& hostfile() const;
   inline void set_hostfile(const ::std::string& value);
   inline void set_hostfile(const char* value);
@@ -118,52 +146,31 @@ class ClusterProto : public ::google::protobuf::Message {
   inline ::std::string* release_hostfile();
   inline void set_allocated_hostfile(::std::string* hostfile);
 
-  // optional bool server_worker_separate = 4 [default = false];
+  // optional bool server_worker_separate = 11 [default = false];
   inline bool has_server_worker_separate() const;
   inline void clear_server_worker_separate();
-  static const int kServerWorkerSeparateFieldNumber = 4;
+  static const int kServerWorkerSeparateFieldNumber = 11;
   inline bool server_worker_separate() const;
   inline void set_server_worker_separate(bool value);
 
-  // optional int32 nworkers_per_group = 5 [default = 1];
-  inline bool has_nworkers_per_group() const;
-  inline void clear_nworkers_per_group();
-  static const int kNworkersPerGroupFieldNumber = 5;
-  inline ::google::protobuf::int32 nworkers_per_group() const;
-  inline void set_nworkers_per_group(::google::protobuf::int32 value);
-
-  // optional int32 nservers_per_group = 6 [default = 1];
-  inline bool has_nservers_per_group() const;
-  inline void clear_nservers_per_group();
-  static const int kNserversPerGroupFieldNumber = 6;
-  inline ::google::protobuf::int32 nservers_per_group() const;
-  inline void set_nservers_per_group(::google::protobuf::int32 value);
-
-  // optional int32 nworkers_per_procs = 7 [default = 1];
-  inline bool has_nworkers_per_procs() const;
-  inline void clear_nworkers_per_procs();
-  static const int kNworkersPerProcsFieldNumber = 7;
-  inline ::google::protobuf::int32 nworkers_per_procs() const;
-  inline void set_nworkers_per_procs(::google::protobuf::int32 value);
-
-  // optional int32 nservers_per_procs = 8 [default = 1];
-  inline bool has_nservers_per_procs() const;
-  inline void clear_nservers_per_procs();
-  static const int kNserversPerProcsFieldNumber = 8;
-  inline ::google::protobuf::int32 nservers_per_procs() const;
-  inline void set_nservers_per_procs(::google::protobuf::int32 value);
-
-  // optional int32 nprocs = 9;
+  // optional int32 nprocs = 12;
   inline bool has_nprocs() const;
   inline void clear_nprocs();
-  static const int kNprocsFieldNumber = 9;
+  static const int kNprocsFieldNumber = 12;
   inline ::google::protobuf::int32 nprocs() const;
   inline void set_nprocs(::google::protobuf::int32 value);
 
-  // required string workspace = 11;
+  // optional int32 start_port = 13 [default = 6723];
+  inline bool has_start_port() const;
+  inline void clear_start_port();
+  static const int kStartPortFieldNumber = 13;
+  inline ::google::protobuf::int32 start_port() const;
+  inline void set_start_port(::google::protobuf::int32 value);
+
+  // required string workspace = 14;
   inline bool has_workspace() const;
   inline void clear_workspace();
-  static const int kWorkspaceFieldNumber = 11;
+  static const int kWorkspaceFieldNumber = 14;
   inline const ::std::string& workspace() const;
   inline void set_workspace(const ::std::string& value);
   inline void set_workspace(const char* value);
@@ -172,31 +179,22 @@ class ClusterProto : public ::google::protobuf::Message {
   inline ::std::string* release_workspace();
   inline void set_allocated_workspace(::std::string* workspace);
 
-  // optional int32 start_port = 10 [default = 6723];
-  inline bool has_start_port() const;
-  inline void clear_start_port();
-  static const int kStartPortFieldNumber = 10;
-  inline ::google::protobuf::int32 start_port() const;
-  inline void set_start_port(::google::protobuf::int32 value);
+  // optional string log_dir = 15;
+  inline bool has_log_dir() const;
+  inline void clear_log_dir();
+  static const int kLogDirFieldNumber = 15;
+  inline const ::std::string& log_dir() const;
+  inline void set_log_dir(const ::std::string& value);
+  inline void set_log_dir(const char* value);
+  inline void set_log_dir(const char* value, size_t size);
+  inline ::std::string* mutable_log_dir();
+  inline ::std::string* release_log_dir();
+  inline void set_allocated_log_dir(::std::string* log_dir);
 
-  // optional int32 largest_message = 20 [default = 1048576];
-  inline bool has_largest_message() const;
-  inline void clear_largest_message();
-  static const int kLargestMessageFieldNumber = 20;
-  inline ::google::protobuf::int32 largest_message() const;
-  inline void set_largest_message(::google::protobuf::int32 value);
-
-  // optional float bandwidth = 21 [default = 100];
-  inline bool has_bandwidth() const;
-  inline void clear_bandwidth();
-  static const int kBandwidthFieldNumber = 21;
-  inline float bandwidth() const;
-  inline void set_bandwidth(float value);
-
-  // repeated .singa.ServerTopology server_group = 30;
+  // repeated .singa.ServerTopology server_group = 20;
   inline int server_group_size() const;
   inline void clear_server_group();
-  static const int kServerGroupFieldNumber = 30;
+  static const int kServerGroupFieldNumber = 20;
   inline const ::singa::ServerTopology& server_group(int index) const;
   inline ::singa::ServerTopology* mutable_server_group(int index);
   inline ::singa::ServerTopology* add_server_group();
@@ -205,16 +203,33 @@ class ClusterProto : public ::google::protobuf::Message {
   inline ::google::protobuf::RepeatedPtrField< ::singa::ServerTopology >*
       mutable_server_group();
 
+  // optional int32 stub_timeout = 30 [default = 5000];
+  inline bool has_stub_timeout() const;
+  inline void clear_stub_timeout();
+  static const int kStubTimeoutFieldNumber = 30;
+  inline ::google::protobuf::int32 stub_timeout() const;
+  inline void set_stub_timeout(::google::protobuf::int32 value);
+
+  // optional int32 worker_timeout = 31 [default = 5000];
+  inline bool has_worker_timeout() const;
+  inline void clear_worker_timeout();
+  static const int kWorkerTimeoutFieldNumber = 31;
+  inline ::google::protobuf::int32 worker_timeout() const;
+  inline void set_worker_timeout(::google::protobuf::int32 value);
+
+  // optional int32 server_timeout = 32 [default = 5000];
+  inline bool has_server_timeout() const;
+  inline void clear_server_timeout();
+  static const int kServerTimeoutFieldNumber = 32;
+  inline ::google::protobuf::int32 server_timeout() const;
+  inline void set_server_timeout(::google::protobuf::int32 value);
+
   // @@protoc_insertion_point(class_scope:singa.ClusterProto)
  private:
   inline void set_has_nworker_groups();
   inline void clear_has_nworker_groups();
   inline void set_has_nserver_groups();
   inline void clear_has_nserver_groups();
-  inline void set_has_hostfile();
-  inline void clear_has_hostfile();
-  inline void set_has_server_worker_separate();
-  inline void clear_has_server_worker_separate();
   inline void set_has_nworkers_per_group();
   inline void clear_has_nworkers_per_group();
   inline void set_has_nservers_per_group();
@@ -223,36 +238,46 @@ class ClusterProto : public ::google::protobuf::Message {
   inline void clear_has_nworkers_per_procs();
   inline void set_has_nservers_per_procs();
   inline void clear_has_nservers_per_procs();
+  inline void set_has_hostfile();
+  inline void clear_has_hostfile();
+  inline void set_has_server_worker_separate();
+  inline void clear_has_server_worker_separate();
   inline void set_has_nprocs();
   inline void clear_has_nprocs();
-  inline void set_has_workspace();
-  inline void clear_has_workspace();
   inline void set_has_start_port();
   inline void clear_has_start_port();
-  inline void set_has_largest_message();
-  inline void clear_has_largest_message();
-  inline void set_has_bandwidth();
-  inline void clear_has_bandwidth();
+  inline void set_has_workspace();
+  inline void clear_has_workspace();
+  inline void set_has_log_dir();
+  inline void clear_has_log_dir();
+  inline void set_has_stub_timeout();
+  inline void clear_has_stub_timeout();
+  inline void set_has_worker_timeout();
+  inline void clear_has_worker_timeout();
+  inline void set_has_server_timeout();
+  inline void clear_has_server_timeout();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::int32 nworker_groups_;
   ::google::protobuf::int32 nserver_groups_;
-  ::std::string* hostfile_;
-  bool server_worker_separate_;
   ::google::protobuf::int32 nworkers_per_group_;
   ::google::protobuf::int32 nservers_per_group_;
   ::google::protobuf::int32 nworkers_per_procs_;
   ::google::protobuf::int32 nservers_per_procs_;
+  ::std::string* hostfile_;
+  bool server_worker_separate_;
   ::google::protobuf::int32 nprocs_;
   ::std::string* workspace_;
+  ::std::string* log_dir_;
   ::google::protobuf::int32 start_port_;
-  ::google::protobuf::int32 largest_message_;
+  ::google::protobuf::int32 stub_timeout_;
   ::google::protobuf::RepeatedPtrField< ::singa::ServerTopology > server_group_;
-  float bandwidth_;
+  ::google::protobuf::int32 worker_timeout_;
+  ::google::protobuf::int32 server_timeout_;
 
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(14 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(16 + 31) / 32];
 
   friend void  protobuf_AddDesc_cluster_2eproto();
   friend void protobuf_AssignDesc_cluster_2eproto();
@@ -417,15 +442,103 @@ inline void ClusterProto::set_nserver_groups(::google::protobuf::int32 value) {
   nserver_groups_ = value;
 }
 
-// optional string hostfile = 3;
-inline bool ClusterProto::has_hostfile() const {
+// optional int32 nworkers_per_group = 3 [default = 1];
+inline bool ClusterProto::has_nworkers_per_group() const {
   return (_has_bits_[0] & 0x00000004u) != 0;
 }
-inline void ClusterProto::set_has_hostfile() {
+inline void ClusterProto::set_has_nworkers_per_group() {
   _has_bits_[0] |= 0x00000004u;
 }
-inline void ClusterProto::clear_has_hostfile() {
+inline void ClusterProto::clear_has_nworkers_per_group() {
   _has_bits_[0] &= ~0x00000004u;
+}
+inline void ClusterProto::clear_nworkers_per_group() {
+  nworkers_per_group_ = 1;
+  clear_has_nworkers_per_group();
+}
+inline ::google::protobuf::int32 ClusterProto::nworkers_per_group() const {
+  return nworkers_per_group_;
+}
+inline void ClusterProto::set_nworkers_per_group(::google::protobuf::int32 value) {
+  set_has_nworkers_per_group();
+  nworkers_per_group_ = value;
+}
+
+// optional int32 nservers_per_group = 4 [default = 1];
+inline bool ClusterProto::has_nservers_per_group() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+inline void ClusterProto::set_has_nservers_per_group() {
+  _has_bits_[0] |= 0x00000008u;
+}
+inline void ClusterProto::clear_has_nservers_per_group() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline void ClusterProto::clear_nservers_per_group() {
+  nservers_per_group_ = 1;
+  clear_has_nservers_per_group();
+}
+inline ::google::protobuf::int32 ClusterProto::nservers_per_group() const {
+  return nservers_per_group_;
+}
+inline void ClusterProto::set_nservers_per_group(::google::protobuf::int32 value) {
+  set_has_nservers_per_group();
+  nservers_per_group_ = value;
+}
+
+// optional int32 nworkers_per_procs = 5 [default = 1];
+inline bool ClusterProto::has_nworkers_per_procs() const {
+  return (_has_bits_[0] & 0x00000010u) != 0;
+}
+inline void ClusterProto::set_has_nworkers_per_procs() {
+  _has_bits_[0] |= 0x00000010u;
+}
+inline void ClusterProto::clear_has_nworkers_per_procs() {
+  _has_bits_[0] &= ~0x00000010u;
+}
+inline void ClusterProto::clear_nworkers_per_procs() {
+  nworkers_per_procs_ = 1;
+  clear_has_nworkers_per_procs();
+}
+inline ::google::protobuf::int32 ClusterProto::nworkers_per_procs() const {
+  return nworkers_per_procs_;
+}
+inline void ClusterProto::set_nworkers_per_procs(::google::protobuf::int32 value) {
+  set_has_nworkers_per_procs();
+  nworkers_per_procs_ = value;
+}
+
+// optional int32 nservers_per_procs = 6 [default = 1];
+inline bool ClusterProto::has_nservers_per_procs() const {
+  return (_has_bits_[0] & 0x00000020u) != 0;
+}
+inline void ClusterProto::set_has_nservers_per_procs() {
+  _has_bits_[0] |= 0x00000020u;
+}
+inline void ClusterProto::clear_has_nservers_per_procs() {
+  _has_bits_[0] &= ~0x00000020u;
+}
+inline void ClusterProto::clear_nservers_per_procs() {
+  nservers_per_procs_ = 1;
+  clear_has_nservers_per_procs();
+}
+inline ::google::protobuf::int32 ClusterProto::nservers_per_procs() const {
+  return nservers_per_procs_;
+}
+inline void ClusterProto::set_nservers_per_procs(::google::protobuf::int32 value) {
+  set_has_nservers_per_procs();
+  nservers_per_procs_ = value;
+}
+
+// optional string hostfile = 10;
+inline bool ClusterProto::has_hostfile() const {
+  return (_has_bits_[0] & 0x00000040u) != 0;
+}
+inline void ClusterProto::set_has_hostfile() {
+  _has_bits_[0] |= 0x00000040u;
+}
+inline void ClusterProto::clear_has_hostfile() {
+  _has_bits_[0] &= ~0x00000040u;
 }
 inline void ClusterProto::clear_hostfile() {
   if (hostfile_ != &::google::protobuf::internal::kEmptyString) {
@@ -487,15 +600,15 @@ inline void ClusterProto::set_allocated_hostfile(::std::string* hostfile) {
   }
 }
 
-// optional bool server_worker_separate = 4 [default = false];
+// optional bool server_worker_separate = 11 [default = false];
 inline bool ClusterProto::has_server_worker_separate() const {
-  return (_has_bits_[0] & 0x00000008u) != 0;
+  return (_has_bits_[0] & 0x00000080u) != 0;
 }
 inline void ClusterProto::set_has_server_worker_separate() {
-  _has_bits_[0] |= 0x00000008u;
+  _has_bits_[0] |= 0x00000080u;
 }
 inline void ClusterProto::clear_has_server_worker_separate() {
-  _has_bits_[0] &= ~0x00000008u;
+  _has_bits_[0] &= ~0x00000080u;
 }
 inline void ClusterProto::clear_server_worker_separate() {
   server_worker_separate_ = false;
@@ -509,95 +622,7 @@ inline void ClusterProto::set_server_worker_separate(bool value) {
   server_worker_separate_ = value;
 }
 
-// optional int32 nworkers_per_group = 5 [default = 1];
-inline bool ClusterProto::has_nworkers_per_group() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
-}
-inline void ClusterProto::set_has_nworkers_per_group() {
-  _has_bits_[0] |= 0x00000010u;
-}
-inline void ClusterProto::clear_has_nworkers_per_group() {
-  _has_bits_[0] &= ~0x00000010u;
-}
-inline void ClusterProto::clear_nworkers_per_group() {
-  nworkers_per_group_ = 1;
-  clear_has_nworkers_per_group();
-}
-inline ::google::protobuf::int32 ClusterProto::nworkers_per_group() const {
-  return nworkers_per_group_;
-}
-inline void ClusterProto::set_nworkers_per_group(::google::protobuf::int32 value) {
-  set_has_nworkers_per_group();
-  nworkers_per_group_ = value;
-}
-
-// optional int32 nservers_per_group = 6 [default = 1];
-inline bool ClusterProto::has_nservers_per_group() const {
-  return (_has_bits_[0] & 0x00000020u) != 0;
-}
-inline void ClusterProto::set_has_nservers_per_group() {
-  _has_bits_[0] |= 0x00000020u;
-}
-inline void ClusterProto::clear_has_nservers_per_group() {
-  _has_bits_[0] &= ~0x00000020u;
-}
-inline void ClusterProto::clear_nservers_per_group() {
-  nservers_per_group_ = 1;
-  clear_has_nservers_per_group();
-}
-inline ::google::protobuf::int32 ClusterProto::nservers_per_group() const {
-  return nservers_per_group_;
-}
-inline void ClusterProto::set_nservers_per_group(::google::protobuf::int32 value) {
-  set_has_nservers_per_group();
-  nservers_per_group_ = value;
-}
-
-// optional int32 nworkers_per_procs = 7 [default = 1];
-inline bool ClusterProto::has_nworkers_per_procs() const {
-  return (_has_bits_[0] & 0x00000040u) != 0;
-}
-inline void ClusterProto::set_has_nworkers_per_procs() {
-  _has_bits_[0] |= 0x00000040u;
-}
-inline void ClusterProto::clear_has_nworkers_per_procs() {
-  _has_bits_[0] &= ~0x00000040u;
-}
-inline void ClusterProto::clear_nworkers_per_procs() {
-  nworkers_per_procs_ = 1;
-  clear_has_nworkers_per_procs();
-}
-inline ::google::protobuf::int32 ClusterProto::nworkers_per_procs() const {
-  return nworkers_per_procs_;
-}
-inline void ClusterProto::set_nworkers_per_procs(::google::protobuf::int32 value) {
-  set_has_nworkers_per_procs();
-  nworkers_per_procs_ = value;
-}
-
-// optional int32 nservers_per_procs = 8 [default = 1];
-inline bool ClusterProto::has_nservers_per_procs() const {
-  return (_has_bits_[0] & 0x00000080u) != 0;
-}
-inline void ClusterProto::set_has_nservers_per_procs() {
-  _has_bits_[0] |= 0x00000080u;
-}
-inline void ClusterProto::clear_has_nservers_per_procs() {
-  _has_bits_[0] &= ~0x00000080u;
-}
-inline void ClusterProto::clear_nservers_per_procs() {
-  nservers_per_procs_ = 1;
-  clear_has_nservers_per_procs();
-}
-inline ::google::protobuf::int32 ClusterProto::nservers_per_procs() const {
-  return nservers_per_procs_;
-}
-inline void ClusterProto::set_nservers_per_procs(::google::protobuf::int32 value) {
-  set_has_nservers_per_procs();
-  nservers_per_procs_ = value;
-}
-
-// optional int32 nprocs = 9;
+// optional int32 nprocs = 12;
 inline bool ClusterProto::has_nprocs() const {
   return (_has_bits_[0] & 0x00000100u) != 0;
 }
@@ -619,15 +644,37 @@ inline void ClusterProto::set_nprocs(::google::protobuf::int32 value) {
   nprocs_ = value;
 }
 
-// required string workspace = 11;
-inline bool ClusterProto::has_workspace() const {
+// optional int32 start_port = 13 [default = 6723];
+inline bool ClusterProto::has_start_port() const {
   return (_has_bits_[0] & 0x00000200u) != 0;
 }
-inline void ClusterProto::set_has_workspace() {
+inline void ClusterProto::set_has_start_port() {
   _has_bits_[0] |= 0x00000200u;
 }
-inline void ClusterProto::clear_has_workspace() {
+inline void ClusterProto::clear_has_start_port() {
   _has_bits_[0] &= ~0x00000200u;
+}
+inline void ClusterProto::clear_start_port() {
+  start_port_ = 6723;
+  clear_has_start_port();
+}
+inline ::google::protobuf::int32 ClusterProto::start_port() const {
+  return start_port_;
+}
+inline void ClusterProto::set_start_port(::google::protobuf::int32 value) {
+  set_has_start_port();
+  start_port_ = value;
+}
+
+// required string workspace = 14;
+inline bool ClusterProto::has_workspace() const {
+  return (_has_bits_[0] & 0x00000400u) != 0;
+}
+inline void ClusterProto::set_has_workspace() {
+  _has_bits_[0] |= 0x00000400u;
+}
+inline void ClusterProto::clear_has_workspace() {
+  _has_bits_[0] &= ~0x00000400u;
 }
 inline void ClusterProto::clear_workspace() {
   if (workspace_ != &::google::protobuf::internal::kEmptyString) {
@@ -689,73 +736,77 @@ inline void ClusterProto::set_allocated_workspace(::std::string* workspace) {
   }
 }
 
-// optional int32 start_port = 10 [default = 6723];
-inline bool ClusterProto::has_start_port() const {
-  return (_has_bits_[0] & 0x00000400u) != 0;
-}
-inline void ClusterProto::set_has_start_port() {
-  _has_bits_[0] |= 0x00000400u;
-}
-inline void ClusterProto::clear_has_start_port() {
-  _has_bits_[0] &= ~0x00000400u;
-}
-inline void ClusterProto::clear_start_port() {
-  start_port_ = 6723;
-  clear_has_start_port();
-}
-inline ::google::protobuf::int32 ClusterProto::start_port() const {
-  return start_port_;
-}
-inline void ClusterProto::set_start_port(::google::protobuf::int32 value) {
-  set_has_start_port();
-  start_port_ = value;
-}
-
-// optional int32 largest_message = 20 [default = 1048576];
-inline bool ClusterProto::has_largest_message() const {
+// optional string log_dir = 15;
+inline bool ClusterProto::has_log_dir() const {
   return (_has_bits_[0] & 0x00000800u) != 0;
 }
-inline void ClusterProto::set_has_largest_message() {
+inline void ClusterProto::set_has_log_dir() {
   _has_bits_[0] |= 0x00000800u;
 }
-inline void ClusterProto::clear_has_largest_message() {
+inline void ClusterProto::clear_has_log_dir() {
   _has_bits_[0] &= ~0x00000800u;
 }
-inline void ClusterProto::clear_largest_message() {
-  largest_message_ = 1048576;
-  clear_has_largest_message();
+inline void ClusterProto::clear_log_dir() {
+  if (log_dir_ != &::google::protobuf::internal::kEmptyString) {
+    log_dir_->clear();
+  }
+  clear_has_log_dir();
 }
-inline ::google::protobuf::int32 ClusterProto::largest_message() const {
-  return largest_message_;
+inline const ::std::string& ClusterProto::log_dir() const {
+  return *log_dir_;
 }
-inline void ClusterProto::set_largest_message(::google::protobuf::int32 value) {
-  set_has_largest_message();
-  largest_message_ = value;
+inline void ClusterProto::set_log_dir(const ::std::string& value) {
+  set_has_log_dir();
+  if (log_dir_ == &::google::protobuf::internal::kEmptyString) {
+    log_dir_ = new ::std::string;
+  }
+  log_dir_->assign(value);
+}
+inline void ClusterProto::set_log_dir(const char* value) {
+  set_has_log_dir();
+  if (log_dir_ == &::google::protobuf::internal::kEmptyString) {
+    log_dir_ = new ::std::string;
+  }
+  log_dir_->assign(value);
+}
+inline void ClusterProto::set_log_dir(const char* value, size_t size) {
+  set_has_log_dir();
+  if (log_dir_ == &::google::protobuf::internal::kEmptyString) {
+    log_dir_ = new ::std::string;
+  }
+  log_dir_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* ClusterProto::mutable_log_dir() {
+  set_has_log_dir();
+  if (log_dir_ == &::google::protobuf::internal::kEmptyString) {
+    log_dir_ = new ::std::string;
+  }
+  return log_dir_;
+}
+inline ::std::string* ClusterProto::release_log_dir() {
+  clear_has_log_dir();
+  if (log_dir_ == &::google::protobuf::internal::kEmptyString) {
+    return NULL;
+  } else {
+    ::std::string* temp = log_dir_;
+    log_dir_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    return temp;
+  }
+}
+inline void ClusterProto::set_allocated_log_dir(::std::string* log_dir) {
+  if (log_dir_ != &::google::protobuf::internal::kEmptyString) {
+    delete log_dir_;
+  }
+  if (log_dir) {
+    set_has_log_dir();
+    log_dir_ = log_dir;
+  } else {
+    clear_has_log_dir();
+    log_dir_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  }
 }
 
-// optional float bandwidth = 21 [default = 100];
-inline bool ClusterProto::has_bandwidth() const {
-  return (_has_bits_[0] & 0x00001000u) != 0;
-}
-inline void ClusterProto::set_has_bandwidth() {
-  _has_bits_[0] |= 0x00001000u;
-}
-inline void ClusterProto::clear_has_bandwidth() {
-  _has_bits_[0] &= ~0x00001000u;
-}
-inline void ClusterProto::clear_bandwidth() {
-  bandwidth_ = 100;
-  clear_has_bandwidth();
-}
-inline float ClusterProto::bandwidth() const {
-  return bandwidth_;
-}
-inline void ClusterProto::set_bandwidth(float value) {
-  set_has_bandwidth();
-  bandwidth_ = value;
-}
-
-// repeated .singa.ServerTopology server_group = 30;
+// repeated .singa.ServerTopology server_group = 20;
 inline int ClusterProto::server_group_size() const {
   return server_group_.size();
 }
@@ -778,6 +829,72 @@ ClusterProto::server_group() const {
 inline ::google::protobuf::RepeatedPtrField< ::singa::ServerTopology >*
 ClusterProto::mutable_server_group() {
   return &server_group_;
+}
+
+// optional int32 stub_timeout = 30 [default = 5000];
+inline bool ClusterProto::has_stub_timeout() const {
+  return (_has_bits_[0] & 0x00002000u) != 0;
+}
+inline void ClusterProto::set_has_stub_timeout() {
+  _has_bits_[0] |= 0x00002000u;
+}
+inline void ClusterProto::clear_has_stub_timeout() {
+  _has_bits_[0] &= ~0x00002000u;
+}
+inline void ClusterProto::clear_stub_timeout() {
+  stub_timeout_ = 5000;
+  clear_has_stub_timeout();
+}
+inline ::google::protobuf::int32 ClusterProto::stub_timeout() const {
+  return stub_timeout_;
+}
+inline void ClusterProto::set_stub_timeout(::google::protobuf::int32 value) {
+  set_has_stub_timeout();
+  stub_timeout_ = value;
+}
+
+// optional int32 worker_timeout = 31 [default = 5000];
+inline bool ClusterProto::has_worker_timeout() const {
+  return (_has_bits_[0] & 0x00004000u) != 0;
+}
+inline void ClusterProto::set_has_worker_timeout() {
+  _has_bits_[0] |= 0x00004000u;
+}
+inline void ClusterProto::clear_has_worker_timeout() {
+  _has_bits_[0] &= ~0x00004000u;
+}
+inline void ClusterProto::clear_worker_timeout() {
+  worker_timeout_ = 5000;
+  clear_has_worker_timeout();
+}
+inline ::google::protobuf::int32 ClusterProto::worker_timeout() const {
+  return worker_timeout_;
+}
+inline void ClusterProto::set_worker_timeout(::google::protobuf::int32 value) {
+  set_has_worker_timeout();
+  worker_timeout_ = value;
+}
+
+// optional int32 server_timeout = 32 [default = 5000];
+inline bool ClusterProto::has_server_timeout() const {
+  return (_has_bits_[0] & 0x00008000u) != 0;
+}
+inline void ClusterProto::set_has_server_timeout() {
+  _has_bits_[0] |= 0x00008000u;
+}
+inline void ClusterProto::clear_has_server_timeout() {
+  _has_bits_[0] &= ~0x00008000u;
+}
+inline void ClusterProto::clear_server_timeout() {
+  server_timeout_ = 5000;
+  clear_has_server_timeout();
+}
+inline ::google::protobuf::int32 ClusterProto::server_timeout() const {
+  return server_timeout_;
+}
+inline void ClusterProto::set_server_timeout(::google::protobuf::int32 value) {
+  set_has_server_timeout();
+  server_timeout_ = value;
 }
 
 // -------------------------------------------------------------------

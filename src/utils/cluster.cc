@@ -10,20 +10,19 @@ namespace singa {
 std::shared_ptr<Cluster> Cluster::instance_;
 Cluster::Cluster(const ClusterProto &cluster, int procs_id) {
   procs_id_=procs_id;
-	cluster_ = cluster;
+  cluster_ = cluster;
   SetupFolders(cluster);
-  //char hostname[256]; gethostname(hostname, sizeof(hostname));
   int nprocs;
   if(server_worker_separate())
-       nprocs=nworker_procs()+nserver_procs();
-    else
-      nprocs=std::max(nworker_procs(), nserver_procs());
+    nprocs=nworker_procs()+nserver_procs();
+  else
+    nprocs=std::max(nworker_procs(), nserver_procs());
   CHECK_LT(procs_id, nprocs);
   if (cluster_.has_nprocs())
     CHECK_EQ(cluster.nprocs(), nprocs);
   else
     cluster_.set_nprocs(nprocs);
-  if(nprocs>0){
+  if(nprocs>1){
     std::ifstream ifs(cluster.hostfile(), std::ifstream::in);
     std::string line;
     while(std::getline(ifs, line)&&endpoints_.size()<nprocs){

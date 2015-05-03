@@ -3,8 +3,6 @@
 #include <chrono>
 #include <random>
 #include "utils/param.h"
-#include "utils/factory.h"
-#include "utils/singleton.h"
 #include "mshadow/tensor.h"
 #include "utils/singleton.h"
 using namespace mshadow;
@@ -15,6 +13,7 @@ namespace singa {
 Param::Param(){
   owner_=-1;
   fan_in_=0;
+  set_version(-1);
 }
 
 Param::~Param(){}
@@ -24,8 +23,9 @@ Msg* Param::GenPutMsg(void* arg){
   int v=*(int*)arg;
   sprintf(buf, "%d %d %f %f", v, size(),
       learning_rate_multiplier(), weight_decay_multiplier());
-  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
-  msg->add_frame(buf, sizeof(buf));
+  Msg* msg=new Msg();
+  msg->set_type(kPut);
+  msg->add_frame(buf, strlen(buf));
   msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
 	return msg;
 }
@@ -34,8 +34,9 @@ Msg* Param::GenGetMsg(void* arg){
   char buf[10];
   int v=*(int*)arg;
   sprintf(buf, "%d", v);
-  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
-  msg->add_frame(buf, sizeof(buf));
+  Msg* msg=new Msg();
+  msg->set_type(kGet);
+  msg->add_frame(buf, strlen(buf));
   return msg;
 }
 
@@ -43,8 +44,9 @@ Msg* Param::GenUpdateMsg(void* arg){
   char buf[10];
   int v=*(int*)arg;
   sprintf(buf, "%d", v);
-  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
-  msg->add_frame(buf, sizeof(buf));
+  Msg* msg=new Msg();
+  msg->set_type(kUpdate);
+  msg->add_frame(buf, strlen(buf));
 
   msg->add_frame(mutable_cpu_grad(), size()*sizeof(float));
   return msg;
@@ -80,7 +82,8 @@ Msg* Param::HandleGetMsg(Msg** msg){
   CHECK_LE(v, version());
   CHECK(!(*msg)->next_frame());
   (*msg)->add_frame(data_.mutable_cpu_data(), sizeof(float)*size());
-  (*msg)->swap_addr();
+  (*msg)->SwapAddr();
+  (*msg)->set_type(kRGet);
   return *msg;
 }
 
@@ -96,9 +99,11 @@ int Param::ParseUpdateMsg(Msg** msg){
 }
 
 Msg* Param::GenUpdateResponseMsg(void* arg){
-  Msg* msg=Singleton<Factory<Msg>>::Instance()->Create("Msg");
+  Msg* msg=new Msg();
   char buf[10];
   sprintf(buf, "%d", version());
+  msg->set_type(kRUpdate);
+  msg->set_target(id());
   msg->add_frame(buf, strlen(buf));
   msg->add_frame(mutable_cpu_data(), size()*sizeof(float));
   return msg;
@@ -128,7 +133,7 @@ int Param::ParseGetResponseMsg(Msg **msg){
   return 1;
 }
 int Param::ParseUpdateResponseMsg(Msg **msg){
-  return ParseSyncResponseMsg(msg);
+  return ParseGetResponseMsg(msg);
 }
 
 void Param::Setup(const ParamProto& proto, const vector<int>& shape,
@@ -140,7 +145,8 @@ void Param::Setup(const ParamProto& proto, const vector<int>& shape,
   fan_in_=fan_in;
 }
 
-void Param::Init(){
+void Param::Init(int v){
+  proto_.set_version(v);
   Tensor<cpu, 1> data(data_.mutable_cpu_data(), Shape1(data_.count()));
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
   auto random=ASingleton<Random<cpu>>::Instance(seed);

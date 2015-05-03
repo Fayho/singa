@@ -1,10 +1,10 @@
-#ifndef INCLUDE_WORKER_H_
-#define INCLUDE_WORKER_H_
+#ifndef INCLUDE_TRAINER_WORKER_H_
+#define INCLUDE_TRAINER_WORKER_H_
 #include <map>
-
-#include "worker/neuralnet.h"
+#include <exception>
+#include "neuralnet/neuralnet.h"
 #include "proto/model.pb.h"
-#include "worker/pm_worker.h"
+#include "trainer/pm_worker.h"
 #include "utils/cluster.h"
 #include "communication/socket.h"
 #include "communication/msg.h"
@@ -42,7 +42,7 @@ class Worker {
   Worker(int group_id, int worker_id);
   ~Worker(){}
   void Setup(const ModelProto& model, shared_ptr<NeuralNet> train_net,
-      shared_ptr<SharedParamShard> shard, shared_ptr<Dealer> layer_dealer,
+      shared_ptr<PMWorker::ParamShard> shard, shared_ptr<Dealer> layer_dealer,
     shared_ptr<Dealer> param_dealer);
   void set_test_net(shared_ptr<NeuralNet> test_net){
     test_net_=test_net;
@@ -166,6 +166,14 @@ class Worker {
   shared_ptr<PMWorker> pmworker_;
   shared_ptr<NeuralNet> train_net_, test_net_, validation_net_;
   shared_ptr<Dealer> layer_dealer_, param_dealer_;
+  Poller layer_poller_, param_poller_;
+};
+
+class WorkerException: public std::exception{
+ public:
+  const char* what() throw(){
+    return "Worker Exception";
+  }
 };
 
 
@@ -207,4 +215,4 @@ class BPWorker: public Worker{
 };
 }  // namespace singa
 
-#endif  // INCLUDE_WORKER_H_
+#endif  // INCLUDE_TRAINER_WORKER_H_

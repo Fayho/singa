@@ -75,6 +75,7 @@ message ModelProto{
     kContrastiveDivergence = 2;
   }
   optional GradCalcAlg alg= 32 [default = kBackPropagation];
+  optional bool hogwild=33 [default=false];
   optional NetProto neuralnet = 40;
   optional bool debug=41 [default=false];
 }
@@ -343,7 +344,6 @@ message SingleLabelImageRecord{
 }
 
 message UpdaterProto {
-  optional bool hogwild=2 [default=true];
   optional float momentum=4 [default=0];
   optional float weight_decay=5 [default=0];
   // used in changing learning rate

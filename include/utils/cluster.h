@@ -84,6 +84,22 @@ class Cluster {
   const string vis_folder(){
     return cluster_.workspace()+"/visualization";
   }
+  const string log_folder(){
+    if(cluster_.has_log_dir()){
+      return cluster_.workspace()+"log";
+    }else
+      return "";
+  }
+
+  const int stub_timeout() const {
+    return cluster_.stub_timeout();
+  }
+  const int worker_timeout() const {
+    return cluster_.worker_timeout();
+  }
+  const int server_timeout() const {
+    return cluster_.server_timeout();
+  }
 
   /**
    * bandwidth MB/s
